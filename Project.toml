@@ -1,0 +1,13 @@
+name = "AdaStress"
+uuid = "f8632b6a-8763-4da0-bfaf-5f7707adef25"
+authors = ["Ritchie Lee <ritchie.lee@nasa.gov> and Rory Lipkis <rory.lipkis@nasa.gov>"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

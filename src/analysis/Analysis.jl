@@ -1,0 +1,3 @@
+module Analysis
+
+end
