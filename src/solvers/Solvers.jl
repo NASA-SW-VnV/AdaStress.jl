@@ -21,6 +21,6 @@ abstract type LocalSolver <: Solver end
 """
 Abstract type for solver output.
 """
-abstract type Solution end
+abstract type Result end
 
 end
