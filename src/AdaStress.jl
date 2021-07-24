@@ -1,3 +1,6 @@
+"""
+Adaptive stress testing (AST) tool. See documentation for usage.
+"""
 module AdaStress
 
 __precompile__(false) #TODO: remove upon release
