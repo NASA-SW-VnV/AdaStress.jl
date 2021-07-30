@@ -3,24 +3,18 @@ Provides solvers for AST MDPs.
 """
 module Solvers
 
-"""
-Abstract base type for solvers.
-"""
-abstract type Solver end
+include("types.jl")
 
-"""
-Abstract type for solvers that return an adversial policy.
-"""
-abstract type GlobalSolver <: Solver end
+export
+    GlobalSolver,
+    LocalSolver,
+    GlobalResult,
+    LocalResult,
 
-"""
-Abstract type for solvers that return failure examples.
-"""
-abstract type LocalSolver <: Solver end
+    SoftActorCritic
 
-"""
-Abstract type for solver output.
-"""
-abstract type Result end
+include("global/sac/SoftActorCritic.jl")
+
+using .SoftActorCritic
 
 end
