@@ -1,3 +1,7 @@
+"""
+Defines interface between custom simulation and AST framework.
+Supports various levels of observability, as well as .
+"""
 module Interface
 
 __precompile__(false)
@@ -16,6 +20,8 @@ export
     GrayBox,
     Environment,
     EnvironmentValue,
+    ASTClient,
+    ASTServer,
 
     reset!,
     environment,
@@ -26,6 +32,7 @@ export
     distance,
     flatten,
     unflatten,
+    connect!,
 
     DistanceGradient,
     DistanceMinimum,
