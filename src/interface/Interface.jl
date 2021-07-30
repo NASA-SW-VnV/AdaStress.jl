@@ -2,6 +2,7 @@ module Interface
 
 __precompile__(false)
 
+using Bijections
 using BSON
 using CommonRLInterface
 using Distributions

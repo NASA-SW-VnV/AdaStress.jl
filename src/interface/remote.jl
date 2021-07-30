@@ -1,94 +1,149 @@
-#TODO: add security, add robustness, add isopen checks / reconnection, compress commands into flags (choose simpler serialization?)
-#TODO: maybe to preserve privacy division, actions(.) should automatically cause client to return rand(actions(.)),
-# then server creates thin sampleable wrapper around it.
+# TODO: security, robustness, isopen checks, reconnection
+# TODO: create test
 
-# Current design:
-# Server contains sim (external to NASA)
-# Client interacts with solvers, etc. (internal to NASA)
+FLAGS = [:reset!, :actions, :observe, :act!, :terminated]
+FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flags <-> bytes
 
-mutable struct ASTClient <: CommonRLInterface.AbstractEnv
-    ip::IPAddr          # ip of server
-    port::Int64         # server port
-    conn::TCPSocket
+"""
+Solver-side client. Interacts with server via TCP.
+"""
+@with_kw mutable struct ASTClient <: CommonRLInterface.AbstractEnv
+    ip::IPAddr=IPv4(0)                          # ip of server
+    port::Int64=2000                            # server port
+    conn::Union{TCPSocket, Nothing}=nothing
+    verbose::Bool=false
 end
 
-function ASTClient(ip::IPAddr, port::Int64)
-    conn = connect(ip, port)
-    return ASTClient(ip, port, conn)
+"""
+Disconnects client from server.
+"""
+function disconnect!(client::ASTClient)
+    if client.conn !== nothing
+        close(client.conn)
+        client.conn = nothing
+    end
+end
+
+"""
+Connects client with server.
+"""
+function connect!(client::ASTClient)
+    disconnect!(client)
+    dt = @elapsed client.conn = connect(client.ip, client.port)
+    @info "Connected to AST server in $dt seconds." client.conn
+end
+
+"""
+Connects client with server at new location.
+"""
+function connect!(client::ASTClient, ip::IPAddr, port::Int64)
+    client.ip = ip
+    client.port = port
+    connect!(client)
+end
+
+"""
+Performs virtual function call on remote MDP. Sends request to server with
+provided function and arguments and receives return value. Blocks until complete.
+"""
+function call(client::ASTClient, f::Function, args...)
+    flag = Symbol(f)
+    req = Dict(:f => FMAP(flag), :a => args)
+    bson(client.conn, req)
+    ret = BSON.load(client.conn)
+    return ret[:z]
 end
 
 function CommonRLInterface.reset!(client::ASTClient)
-    bson(client.conn, Dict(:f => :reset))
-    ack = BSON.load(client.conn)
-    return ack[:z]
+    client.verbose && @info "Sending request to server: `reset!`"
+    call(client, CommonRLInterface.reset!)
 end
 
-#TODO: maybe cache this locally? not safe if environment changes.
-#TODO: see idea in header
 function CommonRLInterface.actions(client::ASTClient)
-    bson(client.conn, Dict(:f => :actions))
-    env = BSON.load(client.conn)
-    return Environment(env[:z])
+    client.verbose && @info "Sending request to server: `actions`"
+    Dirac(call(client, CommonRLInterface.actions)) # returns pseudo-distribution
 end
 
 function CommonRLInterface.observe(client::ASTClient)
-    bson(client.conn, Dict(:f => :observe))
-    obs = BSON.load(client.conn)
-    return obs[:z]
+    client.verbose && @info "Sending request to server: `observe`"
+    call(client, CommonRLInterface.observe)
 end
 
 function CommonRLInterface.act!(client::ASTClient, action::Vector{<:Real})
-	bson(client.conn, Dict(:f => :act, :a => action))
-    r = BSON.load(client.conn)
-	return r[:z]
+    client.verbose && @info "Sending request to server: `act!`"
+    call(client, CommonRLInterface.act!, action)
 end
 
 function CommonRLInterface.terminated(client::ASTClient)
-    bson(client.conn, Dict(:f => :terminated))
-    d = BSON.load(client.conn)
-    return d[:z]
+    client.verbose && @info "Sending request to server: `terminated`"
+    call(client, CommonRLInterface.terminated)
 end
 
-mutable struct ASTServer <: CommonRLInterface.AbstractEnv
-    ip::IPAddr
-    port::Int64
-    server::Sockets.TCPServer
-    conn::TCPSocket
+"""
+Simulation-side server. Interacts with client via TCP.
+"""
+@with_kw mutable struct ASTServer <: CommonRLInterface.AbstractEnv
+    ip::IPAddr=getipaddr()                              # address(es) to listen on
+    port::Int64=2000                                    # port to listen on
+    serv::Union{Sockets.TCPServer, Nothing}=nothing
     mdp::ASTMDP
+    verbose::Bool=false
 end
 
-#TODO: break this into multiple functions so server can be created independent of connectivity
-function ASTServer(mdp::ASTMDP, ip::IPAddr, port::Int64)
-    server = listen(ip, port)
-    conn = accept(server)
-    return ASTServer(ip, port, server, conn, mdp)
+"""
+Constructor for server.
+"""
+function ASTServer(mdp::ASTMDP, ip::IPAddr, port::Int64; kwargs...)
+    ASTServer(; mdp=mdp, ip=ip, port=port, kwargs...)
 end
 
-#TODO: replace with bijection object (maybe from Bijection.jl)
-# which maps CommonRLInterface functions to UInt8
-function req2func(sym::Symbol)
-    if sym == :reset
-        return CommonRLInterface.reset!
-    elseif sym == :actions
-        return CommonRLInterface.actions
-    elseif sym == :observe
-        return CommonRLInterface.observe
-    elseif sym == :act
-        return CommonRLInterface.act!
-    elseif sym == :terminated
-        return CommonRLInterface.terminated
-    else
-        error("Invalid request.")
+"""
+Disconnects server.
+"""
+function disconnect!(server::ASTServer)
+    if server.serv !== nothing
+        close(server.serv)
+        server.serv = nothing
     end
 end
 
+"""
+Listens for incoming requests and executes function calls on MDP.
+Can handle multiple client connections asynchronously.
+"""
 function run(server::ASTServer)
     @async while true
-        request = BSON.load(server.conn)
-        f = req2func(request[:f])
-        @info "Received request from client" f
-        ret = haskey(request, :a) ? f(server.mdp, request[:a]) : f(server.mdp) #TODO: improve
-        bson(server.conn, Dict(:z => ret))
-        @info "Sent response to client"
+        conn = accept(server.serv)
+        @info "Connected to AST client." conn
+        @async while true
+            req = BSON.load(conn)
+            sym = FMAP[req[:f]]
+            server.verbose && @info "Received request from client: `$sym`"
+            f = getproperty(CommonRLInterface, sym)
+            args = req[:a]
+
+            z = f(server.mdp, args...)
+            z = sym == :actions ? rand(z) : z # performs rand server-side
+            server.verbose && @info "Sending response to client."
+            bson(conn, Dict(:z => z))
+        end
     end
+end
+
+"""
+Connects server.
+"""
+function connect!(server::ASTServer)
+    disconnect!(server)
+    server.serv = listen(server.ip, server.port)
+    run(server)
+end
+
+"""
+Connects server at new location.
+"""
+function connect!(server::ASTServer, ip::IPAddr, port::Int64)
+    server.ip = ip
+    server.port = port
+    connect!(server)
 end
