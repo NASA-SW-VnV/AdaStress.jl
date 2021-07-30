@@ -1,6 +1,6 @@
 """
 Defines interface between custom simulation and AST framework.
-Supports various levels of observability, as well as .
+Supports various levels of observability and access.
 """
 module Interface
 
