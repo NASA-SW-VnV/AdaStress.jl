@@ -1,5 +1,6 @@
-# TODO: security, robustness, isopen checks, reconnection
-# TODO: create test
+#TODO: security, robustness, isopen checks, reconnection
+#TODO: create test
+#TODO: ensure works with ssh
 
 FLAGS = [:reset!, :actions, :observe, :act!, :terminated]
 FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flags <-> bytes
@@ -48,10 +49,10 @@ provided function and arguments and receives return value. Blocks until complete
 """
 function call(client::ASTClient, f::Function, args...)
     flag = Symbol(f)
-    req = Dict(:f => FMAP(flag), :a => args)
-    bson(client.conn, req)
-    ret = BSON.load(client.conn)
-    return ret[:z]
+    request = Dict(:f => FMAP(flag), :a => args)
+    bson(client.conn, request)
+    response = BSON.load(client.conn)
+    return response[:z]
 end
 
 function CommonRLInterface.reset!(client::ASTClient)
@@ -116,16 +117,16 @@ function run(server::ASTServer)
         conn = accept(server.serv)
         @info "Connected to AST client." conn
         @async while true
-            req = BSON.load(conn)
-            sym = FMAP[req[:f]]
+            request = BSON.load(conn)
+            sym = FMAP[request[:f]]
             server.verbose && @info "Received request from client: `$sym`"
             f = getproperty(CommonRLInterface, sym)
-            args = req[:a]
+            args = request[:a]
 
             z = f(server.mdp, args...)
-            z = sym == :actions ? rand(z) : z # performs rand server-side
+            response = Dict(:z => sym == :actions ? rand(z) : z) # performs rand server-side
             server.verbose && @info "Sending response to client."
-            bson(conn, Dict(:z => z))
+            bson(conn, response)
         end
     end
 end
