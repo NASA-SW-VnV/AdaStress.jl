@@ -4,7 +4,7 @@ ensembles of neural networks.
 """
 module PolicyValueVerification
 
-__precompile__(false) #TODO: remove after NeuralVerification is fixed
+__init__() = @eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
 
 export
     CrossSection,
@@ -31,7 +31,6 @@ using LazySets: HalfSpace
 using LinearAlgebra
 using NeuralVerification
 using NeuralVerification: Hyperrectangle, Layer, compute_output
-@eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
 using Parameters
 using Plots
 using ProgressMeter
