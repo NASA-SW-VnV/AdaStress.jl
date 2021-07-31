@@ -4,8 +4,6 @@ Supports various levels of observability and access.
 """
 module Interface
 
-__precompile__(false)
-
 using Bijections
 using BSON
 using CommonRLInterface
