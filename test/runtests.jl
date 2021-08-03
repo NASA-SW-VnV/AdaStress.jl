@@ -2,5 +2,5 @@ using AdaStress
 using Test
 
 @testset "AdaStress.jl" begin
-    # Write your tests here.
+    @test AdaStress.GrayBox <: AdaStress.Interface.AbstractSimulation # trivial
 end
