@@ -17,13 +17,13 @@ end
 Gaussian policy object.
 """
 mutable struct SquashedGaussianMLPActor
-    net::Chain                          # primary network
-    mu_layer::Dense                     # mean layer
-    log_std_layer::Dense                # log standard deviation layer
-    act_mins::AbstractVector{Float32}   # minimum values of actions
-    act_maxs::AbstractVector{Float32}   # maximum values of actions
-    rng::AbstractRNG                    # internal RNG
-    rng_gpu::AbstractRNG                # internal RNG for GPU calculations
+    net::Chain                              # primary network
+    mu_layer::Dense                         # mean layer
+    log_std_layer::Dense                    # log standard deviation layer
+    act_mins::AbstractVector{Float32}       # minimum values of actions
+    act_maxs::AbstractVector{Float32}       # maximum values of actions
+    rng::AbstractRNG                        # internal RNG
+    rng_gpu::Union{AbstractRNG, Nothing}    # internal RNG for GPU calculations
 end
 
 function SquashedGaussianMLPActor(
@@ -39,9 +39,13 @@ function SquashedGaussianMLPActor(
     mu_layer = Dense(hidden_sizes[end], act_dim) |> gpu
     log_std_layer = Dense(hidden_sizes[end], act_dim) |> gpu
     act_mins, act_maxs = gpu(Float32.(act_mins)), gpu(Float32.(act_maxs))
-    rng_gpu = CURAND.RNG()
-    seed = rand(rng, UInt32)
-    Random.seed!(rng_gpu, seed)
+    if WITH_GPU
+        rng_gpu = CURAND.RNG()
+        seed = rand(rng, UInt32)
+        Random.seed!(rng_gpu, seed)
+    else
+        rng_gpu = nothing
+    end
     return SquashedGaussianMLPActor(net, mu_layer, log_std_layer, act_mins, act_maxs, rng, rng_gpu)
 end
 
@@ -84,7 +88,7 @@ function (pi::SquashedGaussianMLPActor)(
     if deterministic
         pi_action = mu
     else
-        if obs isa CuArray
+        if WITH_GPU
             z = normal_deviates(pi.rng_gpu, size(mu))
         else
             z = randn(pi.rng, Float32, size(mu))
