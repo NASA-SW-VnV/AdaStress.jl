@@ -1,4 +1,3 @@
-# TODO: deprecate when prebuilt docker image is possible
 ENV["PYTHON"] = "" # prompts internal Conda installation
 using Pkg
 
@@ -9,7 +8,4 @@ Pkg.add([
     PackageSpec(name="TestReports"),
     PackageSpec(url="https://github.com/sisl/NeuralVerification.jl")
 ])
-
-Pkg.develop(path=joinpath(@__DIR__, ".."))
-Pkg.precompile()
 
