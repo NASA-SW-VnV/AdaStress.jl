@@ -265,7 +265,7 @@ function solve(sac::SAC)
         sac.hidden_sizes, sac.num_q, sac.activation, sac.rng)
     ac_targ = deepcopy(ac)
     ac_cpu = to_cpu(ac)
-    alpha = [1.0] |> gpu
+    alpha = [1.0f0] |> gpu
     total_steps = sac.steps_per_epoch * sac.epochs
 
     # Initialize displayed information and progress meter
