@@ -224,9 +224,9 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     activation::Function = SoftActorCritic.relu     # activation after each hidden layer
 
     # Training
-    q_optimizer::Any = AdaBelief(1e-3)              # optimizer for value networks
-    pi_optimizer::Any = AdaBelief(1e-3)             # optimizer for policy network
-    alpha_optimizer::Any = AdaBelief(1e-3)          # optimizer for alpha
+    q_optimizer::Any = AdaBelief(1e-4)              # optimizer for value networks
+    pi_optimizer::Any = AdaBelief(1e-4)             # optimizer for policy network
+    alpha_optimizer::Any = AdaBelief(1e-4)          # optimizer for alpha
     batch_size::Int = 64                            # size of each update to networks
     epochs::Int = 200                               # number of epochs
     steps_per_epoch::Int = 200                      # steps of simulation per epoch
@@ -341,11 +341,10 @@ function solve(sac::SAC)
     end
 
     # Save display values and replay buffer
-    info = Dict{String,Any}()
+    info = Dict{String, Any}()
     for (sym, hist) in disptups
         info[String(sym)] = hist
     end
-    info["replay_buffer"] = sac.buffer #TODO: compatibility, remove later
 
-    return ac_cpu, info, env
+    return ac_cpu, info
 end
