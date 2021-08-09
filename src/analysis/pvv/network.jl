@@ -2,7 +2,7 @@
 """
 Extended neural network containing metadata about transformations.
 """
-@with_kw mutable struct ExtendedNetwork
+Base.@kwdef mutable struct ExtendedNetwork
     nnet::Network
     step_up::Int64      # index of step-up layer
     step_down::Int64    # index of step-down layer

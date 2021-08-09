@@ -31,7 +31,6 @@ using LazySets: HalfSpace
 using LinearAlgebra
 using NeuralVerification
 using NeuralVerification: Hyperrectangle, Layer, compute_output
-using Parameters
 using Plots
 using ProgressMeter
 using RegionTrees

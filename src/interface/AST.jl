@@ -51,7 +51,7 @@ end
 MDP object for AST. Wraps simulation and contains auxiliary information and parameters.
 #TODO: add hooks for annealing.
 """
-@with_kw mutable struct ASTMDP <: CommonRLInterface.AbstractEnv
+Base.@kwdef mutable struct ASTMDP <: CommonRLInterface.AbstractEnv
 	sim::AbstractSimulation						        # simulation wrapping system under test
 	reward_bonus::Float64=0.0   				        # bonus for reaching event
     marginalize::Bool=true                              # use marginalized probabilities

@@ -2,7 +2,7 @@
 """
 Contains cell information pertaining to proof and multiprocessing status.
 """
-@with_kw mutable struct CellStatus
+Base.@kwdef mutable struct CellStatus
     depth::Int64 = 0
     detached::Bool = false
     hash::UInt64 = hash(0)
@@ -13,7 +13,7 @@ end
 """
 Defines parameters of binary refinement process.
 """
-@with_kw struct BinaryRefinery <: AbstractRefinery
+Base.@kwdef struct BinaryRefinery <: AbstractRefinery
     network::Network
     solver = ReluVal(max_iter=100)
     val::Float64 = 0.0                # boundary value
@@ -26,7 +26,7 @@ end
 """
 Defines parameters of interval refinement process.
 """
-@with_kw struct IntervalRefinery <: AbstractRefinery
+Base.@kwdef struct IntervalRefinery <: AbstractRefinery
     network::Network
     solver = ReluVal(max_iter=100)
     interval::Vector{Float64} = [-1.0, 1.0]
@@ -42,17 +42,17 @@ or if further refinement is needed.
 function needs_refinement(cell::Cell, r::AbstractRefinery)
     # Checks status.
     cell.data.proven && return false
-    
+
     # Checks tolerance.
     w = cell.boundary.widths
     maximum(w) < r.tol && return false
-    
+
     # Determines corresponding input set.
     l = cell.boundary.origin
     h = l + w
-    input = Hyperrectangle(low=convert(Vector{Float64}, l), 
+    input = Hyperrectangle(low=convert(Vector{Float64}, l),
                            high=convert(Vector{Float64}, h))
-    
+
     # Attempts verification of condition.
     problem = Problem(r.network, input, r.output)
     result = solve(r.solver, problem)
@@ -61,7 +61,7 @@ function needs_refinement(cell::Cell, r::AbstractRefinery)
         cell.data.proven = true
         return false
     end
-    
+
     if r isa BinaryRefinery
         # Attempts verification of complement.
         problem = Problem(r.network, input, r.coutput)
@@ -72,7 +72,7 @@ function needs_refinement(cell::Cell, r::AbstractRefinery)
             return false
         end
     end
-    
+
     return true
 end
 
@@ -91,7 +91,7 @@ function refine!(cell::Cell, r::AbstractRefinery)
     if needs_refinement(cell, r)
         split!(cell, child_data)
         for c in children(cell)
-           refine!(c, r) 
+           refine!(c, r)
         end
         merge!(cell)
     end
@@ -101,7 +101,7 @@ end
 """
 Merges children of cell if all are proven and belong to the same set, or if
 all are unproven and attached (not awaiting computation by another process).
-If recursive = true, all descendents are merged. 
+If recursive = true, all descendents are merged.
 """
 function merge!(cell::Cell; recursive::Bool=false)
     if !isleaf(cell)

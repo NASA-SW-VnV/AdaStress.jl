@@ -6,7 +6,7 @@ abstract type DistanceHeuristic end
 """
 Gradient of conservative potential. Default and recommended.
 """
-@with_kw mutable struct DistanceGradient <: DistanceHeuristic
+Base.@kwdef mutable struct DistanceGradient <: DistanceHeuristic
     d_curr::Float64=NaN
 end
 
@@ -23,7 +23,7 @@ end
 """
 Minimum distance across episode. Warning: non-Markovian.
 """
-@with_kw mutable struct DistanceMinimum <: DistanceHeuristic
+Base.@kwdef mutable struct DistanceMinimum <: DistanceHeuristic
     d_min::Float64=NaN
 end
 
@@ -46,7 +46,7 @@ reset!(::DistanceNull, ::Float64) = nothing
 """
 User-defined custom heuristic.
 """
-@with_kw mutable struct DistanceCustom <: DistanceHeuristic
+Base.@kwdef mutable struct DistanceCustom <: DistanceHeuristic
     value::Any=nothing      # internal value
     initialize::Function    # maps d -> value
     update::Function        # maps (value, d) -> value'
