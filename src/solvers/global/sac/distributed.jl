@@ -70,13 +70,13 @@ end
 """
 Master-size code. Delegates work and performs updates.
 """
-function distributed_solve(sac::SAC; channel_size::Int=32)
+function distributed_solve(sac::SAC, env_fn::Function; channel_size::Int=32)
     # Create remote channels
     jobs = RemoteChannel(()->Channel{Master2Worker}(channel_size));
     results = RemoteChannel(()->Channel{Worker2Master}(channel_size));
 
     # Initialize AC agent and auxiliary data structures
-    test_env = sac.env_fn()
+    test_env = env_fn()
     replay_buffer = ReplayBuffer(sac.obs_dim, sac.act_dim, sac.max_buffer_size)
     ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
         sac.hidden_sizes, sac.num_q, sac.activation, sac.rng)
@@ -90,7 +90,7 @@ function distributed_solve(sac::SAC; channel_size::Int=32)
 
     # Set up remote task
     for p in workers()
-        remote_do(simulation_task, p, jobs, results, sac.env_fn, sac.max_ep_len)
+        remote_do(simulation_task, p, jobs, results, env_fn, sac.max_ep_len)
     end
 
     # Initialize displayed information and progress meter

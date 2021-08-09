@@ -206,7 +206,6 @@ Defines SAC solver
 """
 Base.@kwdef mutable struct SAC <: GlobalSolver
     # Environment
-    env_fn::Function                                # zero-argument function to create new MDP
     obs_dim::Int                                    # dimension of observation space
     act_dim::Int                                    # dimension of action space
     act_mins::Vector{Float64}                       # minimum values of actions
@@ -256,11 +255,10 @@ end
 """
 Solves MDP with soft actor critic method.
 """
-function solve(sac::SAC)
-
+function solve(sac::SAC, env_fn::Function)
     # Initialize AC agent and auxiliary data structures
-    env = sac.env_fn()
-    test_env = sac.env_fn()
+    env = env_fn()
+    test_env = env_fn()
     ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
         sac.hidden_sizes, sac.num_q, sac.activation, sac.rng)
     ac_targ = deepcopy(ac)
