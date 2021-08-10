@@ -54,6 +54,7 @@ MDP object for AST. Wraps simulation and contains auxiliary information and para
 @with_kw mutable struct ASTMDP <: CommonRLInterface.AbstractEnv
 	sim::AbstractSimulation						        # simulation wrapping system under test
 	reward_bonus::Float64=0.0   				        # bonus for reaching event
+    reward_function::RewardFunction = WeightedReward()  # reward function for AST
     marginalize::Bool=true                              # use marginalized probabilities
     heuristic::DistanceHeuristic=DistanceGradient()     # distance heuristic
 	env_info::Dict{Symbol, EnvironmentInfo}		        # inferred environment properties
@@ -125,10 +126,10 @@ end
 Calculates AST reward from MDP and sample.
 """
 function reward(mdp::ASTMDP, sample::EnvironmentSample)
-	r = logprob(sample)
-	r += isevent(mdp.sim) ? mdp.reward_bonus : 0.0
-    r += (mdp.heuristic)(distance(mdp.sim))
-	return r
+	logp = logprob(sample)
+	event = isevent(mdp.sim)
+    heuristic = (mdp.heuristic)(distance(mdp.sim))
+	return reward(mdp.reward_function, logp, event, heuristic, mdp.reward_bonus)
 end
 
 """
