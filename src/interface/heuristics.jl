@@ -1,5 +1,6 @@
 """
 Distance heuristic abstract type.
+Custom heuristics can inherit this type and implement `reset!` and application functions.
 """
 abstract type DistanceHeuristic end
 
@@ -42,23 +43,3 @@ Null heuristic. Returns zero.
 struct DistanceNull <: DistanceHeuristic end
 reset!(::DistanceNull, ::Float64) = nothing
 (::DistanceNull)(::Float64) = 0.0
-
-"""
-User-defined custom heuristic.
-"""
-@with_kw mutable struct DistanceCustom <: DistanceHeuristic
-    value::Any=nothing      # internal value
-    initialize::Function    # maps d -> value
-    update::Function        # maps (value, d) -> value'
-    generate::Function      # maps (value, d) -> heuristic
-end
-
-function reset!(dh::DistanceCustom, d::Float64)
-    dh.value = (dh.initialize)(d)
-end
-
-function (dh::DistanceCustom)(d::Float64)
-    h = (dh.generate)(dh.value, d)
-    dh.value = (dh.update)(dh.value, d)
-    return h
-end
