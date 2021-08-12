@@ -1,6 +1,6 @@
 """
 Reward function abstract type.
-Custom reward functions can inherit this type and implement `reward` function.
+Custom reward functions can inherit this type and implement application function.
 """
 abstract type RewardFunction end
 
@@ -13,7 +13,7 @@ Base.@kwdef mutable struct WeightedReward <: RewardFunction
     w_heuristic::Float64=1.0
 end
 
-function reward(r::WeightedReward, logprob::Float64, event::Bool, heuristic::Float64, bonus::Float64)
+function (r::WeightedReward)(logprob::Float64, event::Bool, heuristic::Float64, bonus::Float64)
     return r.w_logprob * logprob + r.w_event * (event ? bonus : 0.0) + r.w_heuristic * heuristic
 end
 
@@ -23,6 +23,6 @@ enhanced learning methods.
 """
 struct VectorReward <: RewardFunction end
 
-function reward(::VectorReward, logprob::Float64, event::Bool, heuristic::Float64, bonus::Float64)
+function (::VectorReward)(logprob::Float64, event::Bool, heuristic::Float64, bonus::Float64)
     return [logprob, event ? bonus : 0.0, heuristic]
 end
