@@ -34,6 +34,7 @@ export
     flatten,
     unflatten,
     connect!,
+    @fix,
 
     DistanceGradient,
     DistanceMinimum,
