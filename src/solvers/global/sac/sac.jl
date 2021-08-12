@@ -206,7 +206,6 @@ Defines SAC solver
 """
 Base.@kwdef mutable struct SAC <: GlobalSolver
     # Environment
-    env_fn::Function                                # zero-argument function to create new MDP
     obs_dim::Int                                    # dimension of observation space
     act_dim::Int                                    # dimension of action space
     act_mins::Vector{Float64}                       # minimum values of actions
@@ -224,9 +223,9 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     activation::Function = SoftActorCritic.relu     # activation after each hidden layer
 
     # Training
-    q_optimizer::Any = AdaBelief(1e-3)              # optimizer for value networks
-    pi_optimizer::Any = AdaBelief(1e-3)             # optimizer for policy network
-    alpha_optimizer::Any = AdaBelief(1e-3)          # optimizer for alpha
+    q_optimizer::Any = AdaBelief(1e-4)              # optimizer for value networks
+    pi_optimizer::Any = AdaBelief(1e-4)             # optimizer for policy network
+    alpha_optimizer::Any = AdaBelief(1e-4)          # optimizer for alpha
     batch_size::Int = 64                            # size of each update to networks
     epochs::Int = 200                               # number of epochs
     steps_per_epoch::Int = 200                      # steps of simulation per epoch
@@ -256,16 +255,15 @@ end
 """
 Solves MDP with soft actor critic method.
 """
-function solve(sac::SAC)
-
+function solve(sac::SAC, env_fn::Function)
     # Initialize AC agent and auxiliary data structures
-    env = sac.env_fn()
-    test_env = sac.env_fn()
+    env = env_fn()
+    test_env = env_fn()
     ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
         sac.hidden_sizes, sac.num_q, sac.activation, sac.rng)
     ac_targ = deepcopy(ac)
     ac_cpu = to_cpu(ac)
-    alpha = [1.0] |> gpu
+    alpha = [1.0f0] |> gpu
     total_steps = sac.steps_per_epoch * sac.epochs
 
     # Initialize displayed information and progress meter
@@ -341,11 +339,10 @@ function solve(sac::SAC)
     end
 
     # Save display values and replay buffer
-    info = Dict{String,Any}()
+    info = Dict{String, Any}()
     for (sym, hist) in disptups
         info[String(sym)] = hist
     end
-    info["replay_buffer"] = sac.buffer #TODO: compatibility, remove later
 
-    return ac_cpu, info, env
+    return ac_cpu, info
 end
