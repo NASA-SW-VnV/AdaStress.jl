@@ -40,7 +40,6 @@ using SharedArrays
 using StaticArrays
 
 BLAS.set_num_threads(1)
-pyplot()
 
 include("network.jl")
 include("verification.jl")
