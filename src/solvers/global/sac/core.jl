@@ -88,7 +88,7 @@ function (pi::SquashedGaussianMLPActor)(
     if deterministic
         pi_action = mu
     else
-        if WITH_GPU
+        if mu isa CuArray
             z = normal_deviates(pi.rng_gpu, size(mu))
         else
             z = randn(pi.rng, Float32, size(mu))
@@ -171,26 +171,6 @@ function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=
 end
 
 """
-Defines native AdaBelief optimizer for cross-version compatibility. #TODO: removable?
-"""
-mutable struct AdaBelief
-	eta::Float64
-	beta::Tuple{Float64,Float64}
-	state::IdDict
-end
-
-AdaBelief(η = 0.001, β = (0.9, 0.999)) = AdaBelief(η, β, IdDict())
-
-function Flux.Optimise.apply!(o::AdaBelief, x, Δ)
-	η, β = o.eta, o.beta
-	mt, st = get!(o.state, x, (zero(x), zero(x)))
-	@. mt = β[1] * mt + (1 - β[1]) * Δ
-	@. st = β[2] * st + (1 - β[2]) * (Δ - mt)^2
-	@. Δ =  η * mt / (√(st) + Flux.Optimise.ϵ)
-	return Δ
-end
-
-"""
 Recursively transfers structure to CPU in-place.
 """
 function to_cpu!(x::Any, level::Int64=2)
@@ -222,8 +202,3 @@ softplus(x::Real) = x > 0 ? x + log(1 + exp(-x)) : log(1 + exp(x))
 Defines native relu function to avoid Flux bugs. #TODO: removable?
 """
 relu(x::Real) = max(x, 0)
-
-"""
-Allows safe cross-version transfer of stored MLPActorCritic objects.
-"""
-struct NullRNG <: AbstractRNG end
