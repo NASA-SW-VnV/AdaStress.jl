@@ -31,7 +31,6 @@ using LazySets: HalfSpace
 using LinearAlgebra
 using NeuralVerification
 using NeuralVerification: Hyperrectangle, Layer, compute_output
-using Parameters
 using Plots
 using ProgressMeter
 using RegionTrees
@@ -40,7 +39,6 @@ using SharedArrays
 using StaticArrays
 
 BLAS.set_num_threads(1)
-pyplot()
 
 include("network.jl")
 include("verification.jl")

@@ -3,7 +3,7 @@ Provides solvers for AST MDPs.
 """
 module Solvers
 
-include("types.jl")
+using CommonRLInterface
 
 export
     GlobalSolver,
@@ -13,6 +13,7 @@ export
 
     SoftActorCritic
 
+include("types.jl")
 include("global/sac/SoftActorCritic.jl")
 
 using .SoftActorCritic
