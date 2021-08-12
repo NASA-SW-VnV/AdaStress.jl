@@ -1,32 +1,4 @@
 """
-Internal abstract type.
-"""
-abstract type AbstractSimulation end
-
-"""
-Stores sample value and corresponding log probability.
-"""
-mutable struct Sample
-	value::Any
-	logprob::Float64
-end
-
-"""
-Stores distributions of environment variables.
-"""
-const Environment = Dict{Symbol, Sampleable}
-
-"""
-Stores samples of environment distributions.
-"""
-const EnvironmentSample = Dict{Symbol, Sample}
-
-"""
-Stores values of environment samples.
-"""
-const EnvironmentValue = Dict{Symbol, Any}
-
-"""
 Samples environment, returning EnvironmentValue or array (default).
 """
 function Base.rand(env::Environment; flat::Bool=true)
@@ -35,35 +7,14 @@ function Base.rand(env::Environment; flat::Bool=true)
 end
 
 """
-Computes log probability of environment sample.
+Returns action type of ASTMDP.
 """
-logprob(sample::EnvironmentSample) = sum(s.logprob for (_, s) in sample)
-
-"""
-Stores inferred properties of environment variable.
-"""
-struct EnvironmentInfo
-	n::Int64	# environment variable dimensionality
-	t::Type		# environment variable type
-end
-
-"""
-MDP object for AST. Wraps simulation and contains auxiliary information and parameters.
-#TODO: add hooks for annealing.
-"""
-@with_kw mutable struct ASTMDP <: CommonRLInterface.AbstractEnv
-	sim::AbstractSimulation						        # simulation wrapping system under test
-	reward_bonus::Float64=0.0   				        # bonus for reaching event
-    reward_function::RewardFunction = WeightedReward()  # reward function for AST
-    marginalize::Bool=true                              # use marginalized probabilities
-    heuristic::DistanceHeuristic=DistanceGradient()     # distance heuristic
-	env_info::Dict{Symbol, EnvironmentInfo}		        # inferred environment properties
-end
+actiontype(::ASTMDP{A}) where A = A
 
 """
 Infers dimension of action space.
 """
-act_dim(mdp::ASTMDP) = sum(info.n for info in values(mdp.env_info))
+act_dim(mdp::ASTMDP{SampleAction}) = sum(info.n for info in values(mdp.env_info))
 
 """
 Infers dimension of state space.
@@ -72,6 +23,7 @@ obs_dim(mdp::ASTMDP) = length(observe(mdp.sim))
 
 """
 Flattens EnvironmentValue into single array.
+#TODO: pre-allocate array?
 """
 function flatten(env::Environment, value::EnvironmentValue)
 	action = Float32[]
@@ -85,7 +37,7 @@ end
 """
 Reconstructs EnvironmentValue from single array.
 """
-function unflatten(mdp::ASTMDP, action::Vector{<:Real})
+function unflatten(mdp::ASTMDP{SampleAction}, action::Vector{<:Real})
 	value = EnvironmentValue()
 	env = environment(mdp.sim)
 
@@ -100,7 +52,7 @@ function unflatten(mdp::ASTMDP, action::Vector{<:Real})
 end
 
 """
-Calculates marginalized log probability of sample from environment distribution.
+Calculates log probability of sample from environment variable.
 """
 function logprob(distribution::Any, value::Any, marginalize::Bool)
     logp = logpdf(distribution, value)
@@ -111,38 +63,31 @@ function logprob(distribution::Any, value::Any, marginalize::Bool)
 end
 
 """
-Converts EnvironmentValue to EnvironmentSample, calculating associated log probabilities.
+Calculates total log probability of environment value.
 """
-function create_sample(env::Environment, value::EnvironmentValue, marginalize::Bool)
-	sample = EnvironmentSample()
-	for k in keys(env)
-		dist, val = env[k], value[k]
-		sample[k] = Sample(val, logprob(dist, val, marginalize))
-	end
-	return sample
+function logprob(env::Environment, value::EnvironmentValue, marginalize::Bool)
+    return sum(logprob(env[k], value[k], marginalize) for k in keys(env))
 end
 
-"""
-Calculates AST reward from MDP and sample.
-"""
-function reward(mdp::ASTMDP, sample::EnvironmentSample)
-	logp = logprob(sample)
-	event = isevent(mdp.sim)
-    heuristic = (mdp.heuristic)(distance(mdp.sim))
-	return reward(mdp.reward_function, logp, event, heuristic, mdp.reward_bonus)
+function get_info(env::Environment)
+    env_info = Dict{Symbol, EnvironmentInfo}()
+	for (k, dist) in env
+		sample = rand(dist)
+		array = flatten(dist, sample)
+		env_info[k] = VariableInfo(length(array), typeof(sample))
+	end
+    return env_info
 end
 
 """
 Constructor for ASTMDP object. Infers various properties of MDP.
 """
-function ASTMDP(sim::AbstractSimulation; kwargs...)
+function ASTMDP(sim::GrayBox; kwargs...)
     reset!(sim)
-	env = environment(sim)
-	env_info = Dict{Symbol, EnvironmentInfo}()
-	for (k, dist) in env
-		sample = rand(dist)
-		array = flatten(dist, sample)
-		env_info[k] = EnvironmentInfo(length(array), typeof(sample))
-	end
-	return ASTMDP(; sim=sim, kwargs..., env_info=env_info)
+	return ASTMDP{SampleAction}(; sim=sim, kwargs..., env_info=get_info(environment(sim)))
+end
+
+function ASTMDP(sim::BlackBox; kwargs...)
+    reset!(sim)
+	return ASTMDP{SeedAction}(; sim=sim, kwargs...)
 end

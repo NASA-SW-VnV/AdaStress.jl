@@ -6,18 +6,28 @@ function CommonRLInterface.reset!(mdp::ASTMDP)
     return nothing
 end
 
-CommonRLInterface.actions(mdp::ASTMDP) = environment(mdp.sim)
+CommonRLInterface.actions(mdp::ASTMDP{SampleAction}) = environment(mdp.sim)
+
+CommonRLInterface.actions(::ASTMDP{SeedAction}) = UInt32
 
 CommonRLInterface.observe(mdp::ASTMDP) = Float32.(observe(mdp.sim))
 
-function CommonRLInterface.act!(mdp::ASTMDP, action::Vector{<:Real})
-	env = environment(mdp.sim)
+function CommonRLInterface.act!(mdp::ASTMDP{SampleAction}, action::Vector{<:Real})
+    env = environment(mdp.sim)
 	value = unflatten(mdp, action)
-	sample = create_sample(env, value, mdp.marginalize)
+    logp = logprob(env, value, mdp.marginalize)
+    step!(mdp.sim, value)
 
-	step!(mdp.sim, value)
-	r = reward(mdp, sample)
-	return r
+    event = isevent(mdp.sim)
+    heuristic = mdp.heuristic(distance(mdp.sim))
+	return mdp.reward(logp, event, heuristic, mdp.reward_bonus)
+end
+
+function CommonRLInterface.act!(mdp::ASTMDP{SeedAction}, seed::UInt32)
+    logp = @fix seed step!(mdp.sim)
+    event = isevent(mdp.sim)
+    heuristic = mdp.heuristic(distance(mdp.sim))
+	return mdp.reward(logp, event, heuristic, mdp.reward_bonus)
 end
 
 CommonRLInterface.terminated(mdp::ASTMDP) = isterminal(mdp.sim) || isevent(mdp.sim)

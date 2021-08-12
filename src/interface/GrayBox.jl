@@ -56,7 +56,8 @@ Flattens environment variable to quasi-normalized array.
 """
 function flatten(distribution::Any, value::Any)::Vector{<:Real} end
 
-flatten(dist::Normal, val::Real) = [(val - dist.μ) / dist.σ]
+flatten(d::Distribution{Univariate, Continuous}, v::Real) = [(v - mean(d)) / std(d)]
+flatten(d::Uniform, v::Real) = [(2 * v - d.a - d.b) / (d.b - d.a)]
 
 
 """
@@ -64,4 +65,5 @@ Reconstructs environment variable from quasi-normalized array.
 """
 function unflatten(distribution::Any, array::Vector{<:Real})::Any end
 
-unflatten(dist::Normal, arr::Vector{<:Real}) = dist.σ * arr[] + dist.μ
+unflatten(d::Distribution{Univariate, Continuous}, a::Vector{<:Real}) = std(d) * a[] + mean(d)
+unflatten(d::Uniform, a::Vector{<:Real}) = (a[] * (d.b - d.a) + d.a + d.b) / 2
