@@ -24,5 +24,5 @@ enhanced learning methods.
 struct VectorReward <: RewardFunction end
 
 function (::VectorReward)(logprob::Float64, event::Bool, heuristic::Float64, bonus::Float64)
-    return [logprob, event ? bonus : 0.0, heuristic]
+    return (logprob, event ? bonus : 0.0, heuristic)
 end
