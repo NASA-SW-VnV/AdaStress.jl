@@ -34,9 +34,12 @@ export
     DistanceGradient,
     DistanceMinimum,
     DistanceNull,
-    DistanceCustom
+
+    WeightedReward,
+    VectorReward
 
 include("heuristics.jl")
+include("rewards.jl")
 include("AST.jl")
 include("BlackBox.jl")
 include("GrayBox.jl")
