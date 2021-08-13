@@ -8,7 +8,7 @@ FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flag
 """
 Solver-side client. Interacts with server via TCP.
 """
-@with_kw mutable struct ASTClient <: CommonRLInterface.AbstractEnv
+Base.@kwdef mutable struct ASTClient <: CommonRLInterface.AbstractEnv
     ip::IPAddr=IPv4(0)                          # ip of server
     port::Int64=2000                            # server port
     conn::Union{TCPSocket, Nothing}=nothing
@@ -83,7 +83,7 @@ end
 """
 Simulation-side server. Interacts with client via TCP.
 """
-@with_kw mutable struct ASTServer <: CommonRLInterface.AbstractEnv
+Base.@kwdef mutable struct ASTServer <: CommonRLInterface.AbstractEnv
     ip::IPAddr=getipaddr()                              # address(es) to listen on
     port::Int64=2000                                    # port to listen on
     serv::Union{Sockets.TCPServer, Nothing}=nothing
