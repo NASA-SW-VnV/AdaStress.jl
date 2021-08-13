@@ -20,10 +20,10 @@ Visualizes edges and/or shapes of cells.
 function visualize!(p, root::Cell; fill::Bool=false, tol::Float64=0.01)
     # plot parameters
     format = (alpha=1.0, lw=0.0, label=:none)
-    
+
     # gray background
     fill && plot!(p, shape(root); color=:gray, format...)
-    
+
     # iterate through leaves
     pr = Progress(num_leaves(root), 1)
     for leaf in allleaves(root)
@@ -57,12 +57,14 @@ function visualize(network::ExtendedNetwork, lcs::LinearCrossSection, limits::NT
     if size(nnet.layers[1].weights, 2) != 2
         error("Number of free variables must be 2.")
     end
-    
+
     n = 100
-    f = (nnet, x, y) -> compute_output(nnet, [x, y])[] 
-    xs = collect(range(limits[1][1], limits[2][1], length=n))
-    ys = collect(range(limits[1][2], limits[2][2], length=n))
+    f = (nnet, x, y) -> compute_output(nnet, [x, y])[]
+    xlims = getindex.(limits, 1)
+    ylims = getindex.(limits, 2)
+    xs = collect(range(xlims..., length=n))
+    ys = collect(range(ylims..., length=n))
     zs = f.(Ref(nnet), xs, ys')
-    p = heatmap(xs, ys, zs', aspect_ratio=:equal)
-    return p    
+    p = heatmap(xs, ys, zs'; aspect_ratio=:equal, xlims=xlims, ylims=ylims)
+    return p
 end

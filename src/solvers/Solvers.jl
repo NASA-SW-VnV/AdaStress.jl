@@ -4,6 +4,8 @@ Provides solvers for AST MDPs.
 module Solvers
 
 export
+    solve,
+
     GlobalSolver,
     LocalSolver,
     GlobalResult,

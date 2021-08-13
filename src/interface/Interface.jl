@@ -8,7 +8,6 @@ using Bijections
 using BSON
 using CommonRLInterface
 using Distributions
-using Parameters
 using Random
 using Sockets
 import Base: rand

@@ -7,7 +7,7 @@ abstract type DistanceHeuristic end
 """
 Gradient of conservative potential. Default and recommended.
 """
-@with_kw mutable struct DistanceGradient <: DistanceHeuristic
+Base.@kwdef mutable struct DistanceGradient <: DistanceHeuristic
     d_curr::Float64=NaN
 end
 
@@ -24,7 +24,7 @@ end
 """
 Minimum distance across episode. Warning: non-Markovian.
 """
-@with_kw mutable struct DistanceMinimum <: DistanceHeuristic
+Base.@kwdef mutable struct DistanceMinimum <: DistanceHeuristic
     d_min::Float64=NaN
 end
 

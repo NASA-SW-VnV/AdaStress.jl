@@ -70,7 +70,7 @@ function logprob(env::Environment, value::EnvironmentValue, marginalize::Bool)
 end
 
 function get_info(env::Environment)
-    env_info = Dict{Symbol, EnvironmentInfo}()
+    env_info = EnvironmentInfo()
 	for (k, dist) in env
 		sample = rand(dist)
 		array = flatten(dist, sample)

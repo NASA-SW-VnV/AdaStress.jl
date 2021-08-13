@@ -1,19 +1,23 @@
 module MonteCarloSearch
 
-using CommonRLInterface
-using DataStructures: PriorityQueue
-using ProgressMeter
-
 export
     MCS,
     solve
 
-Base.@kwdef mutable struct MCS
+using ..Solvers
+import ..Solvers.solve
+
+using CommonRLInterface
+using DataStructures: PriorityQueue
+using ProgressMeter
+
+Base.@kwdef mutable struct MCS <: LocalSolver
     num_steps::Int64=10000
     top_k::Int64=10
 end
 
-function solve(mcs::MCS, mdp::CommonRLInterface.AbstractEnv)
+function Solvers.solve(mcs::MCS, env_fn::Function)
+    mdp = env_fn()
     reset!(mdp)
     path = UInt32[]
     best_paths = PriorityQueue()
