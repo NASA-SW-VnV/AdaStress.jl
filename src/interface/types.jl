@@ -4,14 +4,6 @@ Internal abstract type.
 abstract type AbstractSimulation end
 
 """
-Stores sample value and corresponding log probability.
-"""
-mutable struct Sample
-	value::Any
-	logprob::Float64
-end
-
-"""
 Stores distributions of environment variables.
 """
 const Environment = Dict{Symbol, Sampleable}
