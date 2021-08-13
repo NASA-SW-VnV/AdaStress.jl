@@ -1,12 +1,3 @@
-#TODO: settle on solver-problem interaction
-# 1) result = solve!(solver, problem)
-# 2) result = solve!(solver(problem, args...))
-# 3) result = (solver)(problem)
-
-#TODO: should solvers accept MDP or MDP generating function
-# - how is training/testing differentiated
-# - are two separate environments really necessary?
-# - need to consider multiprocessing versions as well
 
 """
 Abstract base type for solvers.
@@ -37,3 +28,12 @@ abstract type GlobalResult <: Result end
 Abstract type for local result (failure examples).
 """
 abstract type LocalResult <: Result end
+
+function (solver::Solver)(env::Any)
+    @warn """Solver was not passed an environment generator.
+    Suboptimal performance may occur if environment cannot be auto-replicated.
+    """
+    return solver(() -> env)
+end
+
+(solver::Solver)(env_fn::Function) = solve(solver, env_fn)

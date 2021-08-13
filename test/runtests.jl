@@ -23,7 +23,7 @@ end
     end
 end
 
-test_envs = ["ContinuumWorld"]
+test_envs = []
 for env in test_envs
     @testset "Example: $env" begin
         @test @nbinclude("$env.ipynb")
