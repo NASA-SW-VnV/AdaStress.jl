@@ -14,9 +14,11 @@ function reset!(sim::BlackBox)::Nothing end
 
 """
 Steps simulation and returns log probability of environment.
+If simulation uses global RNG, the one-argument step! should be implemented.
+If simulation requires non-global RNG, the two-argument function should be implemented instead.
 """
 function step!(sim::BlackBox)::Real end
-
+step!(rng::AbstractRNG, sim::BlackBox)::Real = step!(sim)
 
 """
 Checks whether simulation has finished due to time limit or terminal state, independent of event status.
