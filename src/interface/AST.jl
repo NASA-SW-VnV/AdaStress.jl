@@ -7,19 +7,14 @@ function Base.rand(env::Environment; flat::Bool=true)
 end
 
 """
-Returns action type of ASTMDP.
-"""
-actiontype(::ASTMDP{A}) where A = A
-
-"""
 Infers dimension of action space.
 """
-act_dim(mdp::ASTMDP{SampleAction}) = sum(info.n for info in values(mdp.env_info))
+act_dim(mdp::ASTMDP{<:State, SampleAction}) = sum(info.n for info in values(mdp.env_info))
 
 """
 Infers dimension of state space.
 """
-obs_dim(mdp::ASTMDP) = length(observe(mdp.sim))
+obs_dim(mdp::ASTMDP{ObservableState, <:Action}) = length(observe(mdp.sim))
 
 """
 Flattens EnvironmentValue into single array.
@@ -37,7 +32,7 @@ end
 """
 Reconstructs EnvironmentValue from single array.
 """
-function unflatten(mdp::ASTMDP{SampleAction}, action::Vector{<:Real})
+function unflatten(mdp::ASTMDP{<:State, SampleAction}, action::Vector{<:Real})
 	value = EnvironmentValue()
 	env = environment(mdp.sim)
 
@@ -69,7 +64,10 @@ function logprob(env::Environment, value::EnvironmentValue, marginalize::Bool)
     return sum(logprob(env[k], value[k], marginalize) for k in keys(env))
 end
 
-function get_info(env::Environment)
+"""
+Infers information about simulation environment.
+"""
+function infer_info(env::Environment)
     env_info = EnvironmentInfo()
 	for (k, dist) in env
 		sample = rand(dist)
@@ -80,14 +78,32 @@ function get_info(env::Environment)
 end
 
 """
+Infers type of state.
+"""
+function infer_state(sim::AbstractSimulation)
+    try
+        isempty(observe(sim)) ? UnobservableState : ObservableState
+    catch e
+        e isa UnimplementedError ? UnobservableState : throw(e)
+    end
+end
+
+"""
 Constructor for ASTMDP object. Infers various properties of MDP.
 """
 function ASTMDP(sim::GrayBox; kwargs...)
     reset!(sim)
-	return ASTMDP{SampleAction}(; sim=sim, kwargs..., env_info=get_info(environment(sim)))
+    mdp = ASTMDP{infer_state(sim), SampleAction}(; sim=sim, kwargs..., env_info=infer_info(environment(sim)))
+    global RNG_TEMP = deepcopy(mdp.rng)
+    return mdp
 end
 
 function ASTMDP(sim::BlackBox; kwargs...)
     reset!(sim)
-	return ASTMDP{SeedAction}(; sim=sim, kwargs...)
+	mdp = ASTMDP{infer_state(sim), SeedAction}(; sim=sim, kwargs...)
+    global RNG_TEMP = deepcopy(mdp.rng)
+    return mdp
 end
+
+convert_a(mdp::ASTMDP{<:State, SampleAction}, action::Vector{<:Real}) = SampleAction(unflatten(mdp, action))
+convert_a(::ASTMDP{<:State, SeedAction}, action::UInt32) = SeedAction(action)
