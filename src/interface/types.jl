@@ -4,6 +4,13 @@ Internal abstract type.
 abstract type AbstractSimulation end
 
 """
+Internal unimplemented exception type.
+"""
+struct UnimplementedError <: Exception end
+Base.showerror(io::IO, ::UnimplementedError) = print(io, "Required function has not been implemented.")
+unimplemented() = throw(UnimplementedError())
+
+"""
 Stores distributions of environment variables.
 """
 const Environment = Dict{Symbol, Sampleable}
@@ -27,13 +34,21 @@ Stores properties of environment variables.
 const EnvironmentInfo = Dict{Symbol, VariableInfo}
 
 """
+Abstract type for AST state.
+"""
+abstract type State end
+
+struct ObservableState <: State end
+
+struct UnobservableState <: State end
+
+"""
 Abstract type for AST action.
 """
 abstract type Action end
 
 """
 Action corresponding to instantiation of stochastic environment.
-#TODO: use internal field?
 """
 struct SampleAction <: Action
     sample::EnvironmentValue
@@ -41,21 +56,23 @@ end
 
 """
 Action corresponding to setting random seed.
-#TODO: use internal field?
 """
 struct SeedAction <: Action
     seed::UInt32
 end
 
 """
-MDP object for AST. Wraps simulation and contains auxiliary information and parameters.
+Abstract AST MDP type.
+"""
+abstract type AbstractASTMDP{S<:State, A<:Action} <: CommonRLInterface.AbstractEnv end
+
+"""
+Standard MDP object for AST. Wraps simulation and contains auxiliary information and parameters.
 #TODO: add hooks for annealing.
 """
-Base.@kwdef mutable struct ASTMDP{A<:Action} <: CommonRLInterface.AbstractEnv
+Base.@kwdef mutable struct ASTMDP{S<:State, A<:Action} <: AbstractASTMDP{S, A}
 	sim::AbstractSimulation						        # simulation wrapping system under test
-	reward_bonus::Float64=0.0   				        # bonus for reaching event
-    reward::RewardFunction=WeightedReward()             # reward function
-    marginalize::Bool=true                              # use marginalized probabilities
-    heuristic::DistanceHeuristic=DistanceGradient()     # distance heuristic
+    reward::Reward=Reward()                             # reward structure
 	env_info::EnvironmentInfo=EnvironmentInfo()	        # inferred environment properties
+    rng::AbstractRNG=Random.default_rng()               # RNG used for simulation
 end
