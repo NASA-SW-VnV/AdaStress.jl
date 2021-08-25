@@ -9,53 +9,53 @@ abstract type GrayBox <: AbstractSimulation end
 """
 Resets simulation.
 """
-function reset!(sim::GrayBox)::Nothing end
+reset!(sim::GrayBox)::Nothing = unimplemented()
 
 
 """
 Returns Environment object constructed in simulation.
 Environment is an alias of Dict{Symbol, Sampleable}.
 """
-function environment(sim::GrayBox)::Environment end
+environment(sim::GrayBox)::Environment = unimplemented()
 
 
 """
 Returns quasi-normalized observation of simulation.
 Observation should copy, not reference, simulation state.
+If simulation is unobservable, leave unimplemented.
 """
-function observe(sim::GrayBox)::Vector{<:Real} end
+observe(sim::GrayBox)::Vector{<:Real} = unimplemented()
 
 
 """
 Steps simulation given an EnvironmentValue object.
 EnvironmentValue is an alias of Dict{Symbol, Any}.
 """
-function step!(sim::GrayBox, x::EnvironmentValue)::Nothing end
+step!(sim::GrayBox, x::EnvironmentValue)::Nothing = unimplemented()
 
 
 """
 Checks whether simulation has finished due to time limit or terminal state, independent of event status.
 """
-function isterminal(sim::GrayBox)::Bool end
+isterminal(sim::GrayBox)::Bool = unimplemented()
 
 
 """
 Checks whether simulation is in an event state.
 """
-function isevent(sim::GrayBox)::Bool end
+isevent(sim::GrayBox)::Bool = unimplemented()
 
 
 """
 Returns custom metric of distance to event. For best results, metric should depend only on current state.
 """
-function distance(sim::GrayBox)::Real end
+distance(sim::GrayBox)::Real = unimplemented()
 
 
 """
 Flattens environment variable to quasi-normalized array.
 """
-function flatten(distribution::Any, value::Any)::Vector{<:Real} end
-
+flatten(distribution::Any, value::Any)::Vector{<:Real} = unimplemented()
 flatten(d::Distribution{Univariate, Continuous}, v::Real) = [(v - mean(d)) / std(d)]
 flatten(d::Uniform, v::Real) = [(2 * v - d.a - d.b) / (d.b - d.a)]
 
@@ -63,7 +63,13 @@ flatten(d::Uniform, v::Real) = [(2 * v - d.a - d.b) / (d.b - d.a)]
 """
 Reconstructs environment variable from quasi-normalized array.
 """
-function unflatten(distribution::Any, array::Vector{<:Real})::Any end
-
+unflatten(distribution::Any, array::Vector{<:Real})::Any = unimplemented()
 unflatten(d::Distribution{Univariate, Continuous}, a::Vector{<:Real}) = std(d) * a[] + mean(d)
 unflatten(d::Uniform, a::Vector{<:Real}) = (a[] * (d.b - d.a) + d.a + d.b) / 2
+
+"""
+Advanced option: additional reward or heuristic. Relies on partial function application to
+allow efficient calculation of R(s,a,s') = R(s,a)(s'). Should not alter simulation. See
+documentation for more details.
+"""
+reward(sim::GrayBox, x::EnvironmentValue) = 0.0
