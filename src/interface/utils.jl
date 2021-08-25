@@ -1,13 +1,12 @@
 """
-Allows global random seed to be set in limited scope without affecting larger program.
+Temporary storage for any RNG of the same type as the global RNG.
 """
-macro fix(seed, ex)
-    quote
-        rng = Random.default_rng()
-        rng_save = deepcopy(rng)
-        Random.seed!(rng, $(esc(seed)))
-        output = $(esc(ex))
-        rng = rng_save
-        output
-    end
+RNG_TEMP = deepcopy(Random.default_rng())
+
+"""
+Partial function application transforming f(s,s') to f(s)(s').
+Constructs anonymous function out of expression with input mdp::ASTMDP.
+"""
+macro defer(expr)
+    esc(:(mdp -> $expr))
 end
