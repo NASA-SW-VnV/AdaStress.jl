@@ -8,6 +8,7 @@ using Bijections
 using BSON
 using CommonRLInterface
 using Distributions
+using Random
 using Sockets
 import Base: rand
 
@@ -17,6 +18,8 @@ export
     GrayBox,
     Environment,
     EnvironmentValue,
+    SampleAction,
+    SeedAction,
     ASTClient,
     ASTServer,
 
@@ -30,6 +33,7 @@ export
     flatten,
     unflatten,
     connect!,
+    @fix,
 
     DistanceGradient,
     DistanceMinimum,
@@ -38,11 +42,13 @@ export
     WeightedReward,
     VectorReward
 
+include("utils.jl")
 include("heuristics.jl")
 include("rewards.jl")
-include("AST.jl")
+include("types.jl")
 include("BlackBox.jl")
 include("GrayBox.jl")
+include("AST.jl")
 include("RL.jl")
 include("remote.jl")
 

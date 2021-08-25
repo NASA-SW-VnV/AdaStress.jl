@@ -255,7 +255,7 @@ end
 """
 Solves MDP with soft actor critic method.
 """
-function solve(sac::SAC, env_fn::Function)
+function Solvers.solve(sac::SAC, env_fn::Function)
     # Initialize AC agent and auxiliary data structures
     env = env_fn()
     test_env = env_fn()
