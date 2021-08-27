@@ -18,10 +18,13 @@ end
 
 function Solvers.solve(mcs::MCS, env_fn::Function)
     mdp = env_fn()
+    A = typeof(rand(actions(env_fn())))
+
     reset!(mdp)
-    path = UInt32[]
+    path = A[]
     best_paths = PriorityQueue()
     ret = 0.0
+
     @showprogress for _ in 1:mcs.num_steps
         a = rand(actions(mdp))
         push!(path, a)
