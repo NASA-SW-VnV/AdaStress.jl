@@ -17,7 +17,7 @@ Returns quasi-normalized observation of simulation.
 Observation should copy, not reference, simulation state.
 If simulation is unobservable, leave unimplemented.
 """
-observe(sim::BlackBox)::Vector{<:Real} = unimplemented()
+observe(sim::BlackBox)::AbstractVector{<:Real} = unimplemented()
 
 
 """

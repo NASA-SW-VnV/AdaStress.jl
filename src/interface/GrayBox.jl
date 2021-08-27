@@ -24,7 +24,7 @@ Returns quasi-normalized observation of simulation.
 Observation should copy, not reference, simulation state.
 If simulation is unobservable, leave unimplemented.
 """
-observe(sim::GrayBox)::Vector{<:Real} = unimplemented()
+observe(sim::GrayBox)::AbstractVector{<:Real} = unimplemented()
 
 
 """
@@ -55,7 +55,7 @@ distance(sim::GrayBox)::Real = unimplemented()
 """
 Flattens environment variable to quasi-normalized array.
 """
-flatten(distribution::Any, value::Any)::Vector{<:Real} = unimplemented()
+flatten(distribution::Any, value::Any)::AbstractVector{<:Real} = unimplemented()
 flatten(d::Distribution{Univariate, Continuous}, v::Real) = [(v - mean(d)) / std(d)]
 flatten(d::Uniform, v::Real) = [(2 * v - d.a - d.b) / (d.b - d.a)]
 
@@ -63,9 +63,9 @@ flatten(d::Uniform, v::Real) = [(2 * v - d.a - d.b) / (d.b - d.a)]
 """
 Reconstructs environment variable from quasi-normalized array.
 """
-unflatten(distribution::Any, array::Vector{<:Real})::Any = unimplemented()
-unflatten(d::Distribution{Univariate, Continuous}, a::Vector{<:Real}) = std(d) * a[] + mean(d)
-unflatten(d::Uniform, a::Vector{<:Real}) = (a[] * (d.b - d.a) + d.a + d.b) / 2
+unflatten(distribution::Any, array::AbstractVector{<:Real})::Any = unimplemented()
+unflatten(d::Distribution{Univariate, Continuous}, a::AbstractVector{<:Real}) = std(d) * a[] + mean(d)
+unflatten(d::Uniform, a::AbstractVector{<:Real}) = (a[] * (d.b - d.a) + d.a + d.b) / 2
 
 """
 Advanced option: additional reward or heuristic. Relies on partial function application to
