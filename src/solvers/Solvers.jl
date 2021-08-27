@@ -3,19 +3,22 @@ Provides solvers for AST MDPs.
 """
 module Solvers
 
-using CommonRLInterface
-
 export
+    solve,
+
     GlobalSolver,
     LocalSolver,
     GlobalResult,
     LocalResult,
 
-    SoftActorCritic
+    SoftActorCritic,
+    MonteCarloSearch
 
 include("types.jl")
 include("global/sac/SoftActorCritic.jl")
+include("local/mcs/MonteCarloSearch.jl")
 
 using .SoftActorCritic
+using .MonteCarloSearch
 
 end

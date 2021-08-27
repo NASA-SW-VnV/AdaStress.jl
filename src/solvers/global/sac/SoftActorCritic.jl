@@ -13,6 +13,7 @@ export
     distributed_solve
 
 using ..Solvers
+import ..Solvers.solve
 
 using BSON: @save
 using CommonRLInterface
