@@ -1,20 +1,20 @@
 """
-Reward function abstract type.
-Custom reward functions can inherit this type and implement application function.
-For non-AST-specific reward functions, implement the `reward` function defined in th
+AST core objective function abstract type. Defines fundamental reward function by combining
+only log probability, event bonus, and distance heuristic. Additional contributions to the
+reward should be added by implementing `reward` function in GrayBox or BlackBox interface.
 """
-abstract type RewardFunction end
+abstract type AbstractCoreObjective end
 
 """
-Default reward function. Sums components at each timestep.
+Default objective function. Sums components at each timestep.
 """
-Base.@kwdef mutable struct WeightedRewardFunction <: RewardFunction
+Base.@kwdef mutable struct WeightedObjective <: AbstractCoreObjective
     wl::Float64=1.0
     we::Float64=1.0
     wh::Float64=1.0
 end
 
-function (rf::WeightedRewardFunction)(logprob::Float64, event::Float64, heuristic::Float64)
+function (rf::WeightedObjective)(logprob::Float64, event::Float64, heuristic::Float64)
     return rf.wl * logprob + rf.we * event + rf.wh * heuristic
 end
 
@@ -22,18 +22,20 @@ end
 Vector reward function. Maintains separate components to facilitate post-analysis and
 enhanced learning methods.
 """
-struct VectorRewardFunction <: RewardFunction end
+struct VectorObjective <: AbstractCoreObjective end
 
-function (::VectorRewardFunction)(logprob::Float64, event::Float64, heuristic::Float64)
+function (::VectorObjective)(logprob::Float64, event::Float64, heuristic::Float64)
     return (logprob, event, heuristic)
 end
 
 """
 Standard AST reward structure.
 """
-Base.@kwdef mutable struct Reward
+abstract type AbstractReward end
+
+Base.@kwdef mutable struct Reward <: AbstractReward
     marginalize::Bool=true
-    heuristic::DistanceHeuristic=GradientHeuristic()
+    heuristic::AbstractDistanceHeuristic=GradientHeuristic()
     event_bonus::Float64=0.0
-    reward_function::RewardFunction=WeightedRewardFunction()
+    reward_function::AbstractCoreObjective=WeightedObjective()
 end

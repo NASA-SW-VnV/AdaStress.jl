@@ -72,7 +72,7 @@ Standard MDP object for AST. Wraps simulation and contains auxiliary information
 """
 Base.@kwdef mutable struct ASTMDP{S<:State, A<:Action} <: AbstractASTMDP{S, A}
 	sim::AbstractSimulation						        # simulation wrapping system under test
-    reward::Reward=Reward()                             # reward structure
+    reward::AbstractReward=Reward()                     # reward structure
 	env_info::EnvironmentInfo=EnvironmentInfo()	        # inferred environment properties
     rng::AbstractRNG=Random.default_rng()               # RNG used for simulation
 end

@@ -2,19 +2,19 @@
 Distance heuristic abstract type.
 Custom heuristics can inherit this type and implement `reset!` and application functions.
 """
-abstract type DistanceHeuristic end
-reset!(::DistanceHeuristic) = nothing
+abstract type AbstractDistanceHeuristic end
+reset!(::AbstractDistanceHeuristic) = nothing
 
 """
 Gradient of conservative potential. Default and recommended.
 """
-struct GradientHeuristic <: DistanceHeuristic end
+struct GradientHeuristic <: AbstractDistanceHeuristic end
 (::GradientHeuristic)(d::Float64) = @defer d - distance(mdp.sim)
 
 """
 Minimum distance across episode. Warning: non-Markovian.
 """
-Base.@kwdef struct MinimumHeuristic <: DistanceHeuristic
+Base.@kwdef struct MinimumHeuristic <: AbstractDistanceHeuristic
     d_min::Float64=Inf
 end
 
@@ -30,5 +30,5 @@ end
 """
 Null heuristic. Returns zero.
 """
-struct NullHeuristic <: DistanceHeuristic end
+struct NullHeuristic <: AbstractDistanceHeuristic end
 (::NullHeuristic)(::Float64) = @defer 0.0
