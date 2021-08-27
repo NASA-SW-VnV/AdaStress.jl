@@ -46,7 +46,7 @@ end
 Returns action chain from head to current node.
 """
 function trace_back(node::Node{A}) where A
-    ishead(node) ? A[] : append!(trace_back(node.parent[2]), node.parent[1])
+    ishead(node) ? A[] : push!(trace_back(node.parent[2]), node.parent[1])
 end
 
 """
