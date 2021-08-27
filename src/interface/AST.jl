@@ -17,16 +17,15 @@ Infers dimension of state space.
 obs_dim(mdp::ASTMDP{ObservableState, <:Action}) = length(observe(mdp.sim))
 
 """
+Returns ordered list dictionary keys.
+"""
+orderedkeys(dict::Dict) = sort!(collect(keys(dict)))
+
+"""
 Flattens EnvironmentValue into single array.
-#TODO: pre-allocate array?
 """
 function flatten(env::Environment, value::EnvironmentValue)
-	action = Float32[]
-	for k in sort(collect(keys(env)))
-		array = flatten(env[k], value[k])
-		append!(action, array)
-	end
-	return action
+	return reduce(append!, flatten(env[k], value[k]) for k in orderedkeys(env))
 end
 
 """
@@ -37,7 +36,7 @@ function unflatten(mdp::ASTMDP{<:State, SampleAction}, action::Vector{<:Real})
 	env = environment(mdp.sim)
 
 	i = 0
-	for k in sort(collect(keys(env)))
+	for k in orderedkeys(env)
 		n = mdp.env_info[k].n
 		array = action[i+1:i+n]
 		value[k] = unflatten(env[k], array)
