@@ -12,13 +12,16 @@ export
     LocalResult,
 
     SoftActorCritic,
-    MonteCarloSearch
+    MonteCarloSearch,
+    MonteCarloTreeSearch
 
 include("types.jl")
 include("global/sac/SoftActorCritic.jl")
 include("local/mcs/MonteCarloSearch.jl")
+include("local/mcts/MonteCarloTreeSearch.jl")
 
 using .SoftActorCritic
 using .MonteCarloSearch
+using .MonteCarloTreeSearch
 
 end
