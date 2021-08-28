@@ -13,7 +13,10 @@ end
 """
 Selects maximum item from iterable collection as determined by supplied function.
 """
-Base.argmax(f::Function, itr) = (v -> v[argmax(f.(v))])(collect(itr))
+function Base.argmax(f::Function, itr)
+    v = collect(itr)
+    return v[argmax(f.(v))]
+end
 
 """
 Rolls out random policy from given state, returning total return and final state.
