@@ -14,8 +14,15 @@ end
 Selects maximum item from iterable collection as determined by supplied function.
 """
 function Base.argmax(f::Function, itr)
-    v = collect(itr)
-    return v[argmax(f.(v))]
+    x_best = first(itr)
+    f_best = f(x_best)
+    for x in itr
+        fx = f(x)
+        if fx > f_best
+            x_best, f_best = x, fx
+        end
+    end
+    return x_best
 end
 
 """
