@@ -19,7 +19,7 @@ Alternatively, a Julia/AdaStress docker container can be created from the docker
 
 To effectively make use of AdaStress, you must have a **system under test (SUT)** and a simulation that allows the SUT to interact with a **semi-stochastic environment**. In other words, there must be variables in your simulation that are random and behave according to a modeled probability distribution. The system should have at least one identifiable **criterion of failure** and you should be able to specify a measure of **distance to failure** which achieves its minimum at a failure event.
 
->For instance, if you are stress-testing an aircraft collision avoidance system, your simulation might involve an encounter scenario with mutiple random variables, such as pilot response, wind, and sensor noise. The crition of failure might be two aircraft coming within a certain distance of each other. The distance to failure would then be the distance between the aircraft.
+>For instance, if you are stress-testing an aircraft collision avoidance system, your simulation might involve an encounter scenario with mutiple random variables, such as pilot response, wind, and sensor noise. The criterion of failure might be two aircraft coming within a certain distance of each other. The distance to failure would then be the distance between the aircraft.
 
 AdaStress provides two simulation interfaces, **blackbox** and **graybox**. Solvers may be compatible with one or both interfaces.
 - A **blackbox** simulation does not reveal its environment variables, and performs all updates internally. AdaStress interacts with the simulation by setting a random seed.
