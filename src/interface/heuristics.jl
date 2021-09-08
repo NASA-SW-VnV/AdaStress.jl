@@ -15,7 +15,7 @@ struct GradientHeuristic <: AbstractDistanceHeuristic end
 Minimum distance across episode. Warning: non-Markovian.
 """
 Base.@kwdef struct MinimumHeuristic <: AbstractDistanceHeuristic
-    d_min::Float64=Inf
+    d_min::Float64 = Inf
 end
 
 function (h::MinimumHeuristic)(d::Float64)
