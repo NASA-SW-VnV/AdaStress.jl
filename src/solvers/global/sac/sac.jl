@@ -277,7 +277,7 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     for t in 1:total_steps
         # Choose action
     	random_policy = t <= sac.start_steps
-    	a = random_policy ? rand(actions(env)) : ac_cpu(o)
+    	a = random_policy ? rand(actions(env); flat=true) : ac_cpu(o)
 
         # Step environment
         r = act!(env, a)

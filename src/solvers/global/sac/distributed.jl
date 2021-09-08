@@ -38,7 +38,7 @@ function simulation_task(jobs::RemoteChannel, results::RemoteChannel, env_fn::Fu
         o = observe(env)
         for _ in 1:job.n_steps
             # Choose action
-        	a = job.random_policy ? rand(actions(env)) : job.ac(o)
+        	a = job.random_policy ? rand(actions(env); flat=true) : job.ac(o)
 
             # Step environment
             r = act!(env, a)
