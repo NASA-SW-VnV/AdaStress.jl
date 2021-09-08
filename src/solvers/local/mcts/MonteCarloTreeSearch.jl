@@ -1,3 +1,7 @@
+"""
+Implements Monte Carlo tree search algorithm, which balances exploration and experience.
+Constructs partially-ordered search tree over actions.
+"""
 module MonteCarloTreeSearch
 
 export

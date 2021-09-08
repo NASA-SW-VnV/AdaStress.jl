@@ -1,3 +1,7 @@
+"""
+Implements simple uninformed Monte Carlo search. Should be used as a baseline for other
+local solvers, in terms of runtime performance and overall efficacy.
+"""
 module MonteCarloSearch
 
 export
