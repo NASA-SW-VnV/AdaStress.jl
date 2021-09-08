@@ -128,13 +128,13 @@ function test_agent(
         reset!(test_env)
         o = observe(test_env)
         os, as = Vector{Float32}[], Vector{Float32}[]
-        while !(d || ep_len == max_ep_len)
+        while !(d || ep_len > max_ep_len)
             a = ac(o, true)
             push!(os, o)
             push!(as, a)
+            d = terminated(test_env)
             r = act!(test_env, a)
             o = observe(test_env)
-            d = terminated(test_env)
             ep_ret += r
             ep_len += 1
         end
@@ -280,20 +280,20 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     	a = random_policy ? rand(actions(env); flat=true) : ac_cpu(o)
 
         # Step environment
+        d = terminated(env)
         r = act!(env, a)
         o2 = observe(env)
-        d = terminated(env)
         ep_ret += r
         ep_len += 1
 
         # Ignore done signal if due to overtime
-        d = (ep_len == sac.max_ep_len) ? false : d
+        d = (ep_len > sac.max_ep_len) ? false : d
 
         store!(sac.buffer, o, a, r, o2, d)
         o = o2
 
         # End of trajectory handling
-        if d || ep_len == sac.max_ep_len
+        if d || ep_len > sac.max_ep_len
             ep_ret, ep_len = 0.0, 0
             reset!(env)
             o = observe(env)

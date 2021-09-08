@@ -29,8 +29,7 @@ function simulation_task(jobs::RemoteChannel, results::RemoteChannel, env_fn::Fu
     while true
         # Receive job from master process and initialize RNG
         job = take!(jobs)
-        rng = VERSION < v"1.3" ? Random.GLOBAL_RNG : Random.default_rng()
-        copy!(job.ac.pi.rng, rng)
+        copy!(job.ac.pi.rng, Random.default_rng())
 
         empty!(transition_tuples)
         ep_ret, ep_len = 0.0, 0
@@ -41,20 +40,20 @@ function simulation_task(jobs::RemoteChannel, results::RemoteChannel, env_fn::Fu
         	a = job.random_policy ? rand(actions(env); flat=true) : job.ac(o)
 
             # Step environment
+            d = terminated(env)
             r = act!(env, a)
             o2 = observe(env)
-            d = terminated(env)
             ep_ret += r
             ep_len += 1
 
             # Ignore done signal if due to overtime
-            d = (ep_len == max_ep_len) ? false : d
+            d = (ep_len > max_ep_len) ? false : d
 
-            push!(transition_tuples, (o=o,a=a,r=r,o2=o2,d=d))
+            push!(transition_tuples, (o=o, a=a, r=r, o2=o2, d=d))
             o = o2
 
             # End of trajectory handling
-            if d || ep_len == max_ep_len
+            if d || ep_len > max_ep_len
                 d, ep_ret, ep_len = false, 0.0, 0
                 reset!(env)
                 o = observe(env)
