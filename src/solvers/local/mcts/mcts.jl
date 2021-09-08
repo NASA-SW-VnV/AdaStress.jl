@@ -33,17 +33,21 @@ function simulate(mcts::MCTS, mdp::CommonRLInterface.AbstractEnv, s::Node=mcts.t
     # expansion
     s.n == 1 && return rollout(mdp, s)
 
-    # progressive widening or maximizing upper confidence bound
-    pw = length(s.transitions) < mcts.k * s.n ^ mcts.α
-    a, s′ = pw ? (rand(actions(mdp)), nothing) : top_transition(s)
+    if length(s.transitions) < mcts.k * s.n ^ mcts.α
+        # progressive widening
+        a = rand(actions(mdp))
+        s′ = add(s, a; forward=false)
+    else
+        # maximize upper confidence bound
+        a, s′ = top_transition(s)
+    end
 
     # transition
     d = terminated(mdp)
     r = act!(mdp, a)
-    d && return r, s
+    d && return r, s′
 
     # update value estimate
-    s′ = pw ? add(s, a) : s′
     rf, sf = simulate(mcts, mdp, s′)
     q = r + rf
     s′.q = ((s′.n - 1) * s′.q + q) / (s′.n)
