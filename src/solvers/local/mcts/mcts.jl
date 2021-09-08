@@ -5,24 +5,9 @@ Base.@kwdef mutable struct MCTS <: LocalSolver
     num_iterations::Int64      = 1000
     top_k::Int64               = 10
     k::Float64                 = 1.0
-    alpha::Float64             = 0.5
+    α::Float64                 = 0.7
     c::Float64                 = 1.0
     tree::Union{Node, Nothing} = nothing
-end
-
-"""
-Selects maximum item from iterable collection as determined by supplied function.
-"""
-function Base.argmax(f::Function, itr)
-    x_best = first(itr)
-    f_best = f(x_best)
-    for x in itr
-        fx = f(x)
-        if fx > f_best
-            x_best, f_best = x, fx
-        end
-    end
-    return x_best
 end
 
 """
@@ -32,13 +17,11 @@ function rollout(mdp::CommonRLInterface.AbstractEnv, s::Node)
     d = terminated(mdp)
     a = rand(actions(mdp))
     r = act!(mdp, a)
-    if d
-        return r, s
-    else
-        sp = add(s, a; forward=false)
-        rf, sf = rollout(mdp, sp)
-        return r + rf, sf
-    end
+    d && return r, s
+
+    s′ = add(s, a; forward=false)
+    rf, sf = rollout(mdp, s′)
+    return r + rf, sf
 end
 
 """
@@ -48,35 +31,26 @@ function simulate(mcts::MCTS, mdp::CommonRLInterface.AbstractEnv, s::Node=mcts.t
     s.n += 1
 
     # expansion
-    if s.new
-        s.new = false
-        return rollout(mdp, s)
-    end
+    s.n == 1 && return rollout(mdp, s)
 
-    if length(children(s)) < mcts.k * s.n ^ mcts.alpha
-        # progressive widening
-        a = rand(actions(mdp))
-        add(s, a)
-    else
-        # upper confidence bound
-        ucb = a -> s.actions[a].q + mcts.c * sqrt(log(s.n) / s.actions[a].n)
-        a = argmax(ucb, keys(s.actions))
-    end
+    # progressive widening or maximizing upper confidence bound
+    pw = length(s.transitions) < mcts.k * s.n ^ mcts.α
+    a, s′ = pw ? (rand(actions(mdp)), nothing) : top_transition(s)
 
     # transition
     d = terminated(mdp)
     r = act!(mdp, a)
+    d && return r, s
 
-    if d
-        return r, s
-    else
-        # update value estimate
-        sp = s.actions[a]
-        rf, sf = simulate(mcts, mdp, sp)
-        q = r + rf
-        sp.q = ((sp.n - 1) * sp.q + q) / (sp.n)
-        return q, sf
-    end
+    # update value estimate
+    s′ = pw ? add(s, a) : s′
+    rf, sf = simulate(mcts, mdp, s′)
+    q = r + rf
+    s′.q = ((s′.n - 1) * s′.q + q) / (s′.n)
+
+    # update upper confidence bound
+    s.transitions[a => s′] = s′.q + mcts.c * sqrt(log(s.n) / s′.n)
+    return q, sf
 end
 
 """
@@ -91,11 +65,8 @@ function Solvers.solve(mcts::MCTS, env_fn::Function)
     @showprogress for _ in 1:mcts.num_iterations
         reset!(mdp)
         r, s = simulate(mcts, mdp)
-        path = trace_back(s)
-        best_paths[deepcopy(path)] = r
-        if length(best_paths) > mcts.top_k
-            delete!(best_paths, first(keys(best_paths)))
-        end
+        path = trace(s)
+        enqueue!(best_paths, path, r, mcts.top_k)
     end
 
     return best_paths
