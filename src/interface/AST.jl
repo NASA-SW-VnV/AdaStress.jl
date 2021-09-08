@@ -7,11 +7,6 @@ function Base.rand(env::Environment; flat::Bool=false)
 end
 
 """
-Allows keyword to be passed with noncompatible action types.
-"""
-Base.rand(x::Type{UInt32}; flat::Bool) = rand(x)
-
-"""
 Infers dimension of action space.
 """
 act_dim(mdp::ASTMDP{<:State, SampleAction}) = sum(info.n for info in values(mdp.env_info))
