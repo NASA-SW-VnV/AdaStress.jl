@@ -46,6 +46,7 @@ Applies converted action to environment and returns reward.
 """
 function (mdp::ASTMDP{<:State, A})(a::A) where A <: Action
     # rewards (partial application)
+    event = isevent(mdp.sim) ? mdp.reward.event_bonus : 0.0
     heur = mdp.reward.heuristic(distance(mdp.sim))
     rew = A <: SampleAction ? reward(mdp.sim, a.sample) : reward(mdp.sim)
 
@@ -53,7 +54,6 @@ function (mdp::ASTMDP{<:State, A})(a::A) where A <: Action
     logp = evaluate!(mdp, a)
 
     # final reward calculation
-    event = isevent(mdp.sim) ? mdp.reward.event_bonus : 0.0 #TODO: decide on r(s) vs. r(s')
     r = mdp.reward.reward_function(logp, event, heur(mdp))
     r += rew isa Function ? rew(mdp.sim) : rew
     return r
