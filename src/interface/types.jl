@@ -67,6 +67,21 @@ Abstract AST MDP type.
 abstract type AbstractASTMDP{S<:State, A<:Action} <: CommonRLInterface.AbstractEnv end
 
 """
+Return state type.
+"""
+state_type(::AbstractASTMDP{S, A}) where {S, A} = S
+
+"""
+Return action type.
+"""
+action_type(::AbstractASTMDP{S, A}) where {S, A} = A
+
+"""
+Abstract AST reward structure.
+"""
+abstract type AbstractReward end
+
+"""
 Standard MDP object for AST. Wraps simulation and contains auxiliary information and parameters.
 #TODO: add hooks for annealing.
 """

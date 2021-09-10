@@ -31,8 +31,6 @@ end
 """
 Standard AST reward structure.
 """
-abstract type AbstractReward end
-
 Base.@kwdef mutable struct Reward <: AbstractReward
     marginalize::Bool                      = true
     heuristic::AbstractDistanceHeuristic   = GradientHeuristic()
