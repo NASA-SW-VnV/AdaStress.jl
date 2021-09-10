@@ -39,15 +39,15 @@ end
 """
 Applies raw action to environment and returns reward.
 """
-(mdp::ASTMDP{<:State, <:Action})(action) = (mdp)(convert_a(mdp, action))
+act!(mdp::ASTMDP{<:State, <:Action}, action) = act!(mdp, convert_a(mdp, action))
 
 """
 Applies converted action to environment and returns reward.
 """
-function (mdp::ASTMDP{<:State, A})(a::A) where A <: Action
+function act!(mdp::ASTMDP{<:State, A}, a::A) where A <: Action
     # rewards (partial application)
     event = isevent(mdp.sim) ? mdp.reward.event_bonus : 0.0
-    heur = mdp.reward.heuristic(distance(mdp.sim))
+    heur = mdp.reward.heuristic(mdp) # argument was distance(mdp.sim)
     rew = A <: SampleAction ? reward(mdp.sim, a.sample) : reward(mdp.sim)
 
     # stepping and likelihood evaluation
@@ -66,12 +66,12 @@ terminated(mdp::ASTMDP) = isterminal(mdp.sim) || isevent(mdp.sim)
 
 # Connects AdaStress interface to CommonRLInterface
 
-CommonRLInterface.reset!(mdp::ASTMDP) = reset!(mdp)
+CommonRLInterface.reset!(mdp::AbstractASTMDP) = reset!(mdp)
 
-CommonRLInterface.actions(mdp::ASTMDP) = actions(mdp)
+CommonRLInterface.actions(mdp::AbstractASTMDP) = actions(mdp)
 
-CommonRLInterface.observe(mdp::ASTMDP) = observe(mdp)
+CommonRLInterface.observe(mdp::AbstractASTMDP) = observe(mdp)
 
-CommonRLInterface.act!(mdp::ASTMDP, action) = (mdp)(action)
+CommonRLInterface.act!(mdp::AbstractASTMDP, action) = act!(mdp, action)
 
-CommonRLInterface.terminated(mdp::ASTMDP) = terminated(mdp)
+CommonRLInterface.terminated(mdp::AbstractASTMDP) = terminated(mdp)
