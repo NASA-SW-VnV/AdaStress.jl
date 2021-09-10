@@ -9,9 +9,9 @@ abstract type AbstractCoreObjective end
 Default objective function. Sums components at each timestep.
 """
 Base.@kwdef mutable struct WeightedObjective <: AbstractCoreObjective
-    wl::Float64=1.0
-    we::Float64=1.0
-    wh::Float64=1.0
+    wl::Float64 = 1.0
+    we::Float64 = 1.0
+    wh::Float64 = 1.0
 end
 
 function (rf::WeightedObjective)(logprob::Float64, event::Float64, heuristic::Float64)
@@ -34,8 +34,8 @@ Standard AST reward structure.
 abstract type AbstractReward end
 
 Base.@kwdef mutable struct Reward <: AbstractReward
-    marginalize::Bool=true
-    heuristic::AbstractDistanceHeuristic=GradientHeuristic()
-    event_bonus::Float64=0.0
-    reward_function::AbstractCoreObjective=WeightedObjective()
+    marginalize::Bool                      = true
+    heuristic::AbstractDistanceHeuristic   = GradientHeuristic()
+    event_bonus::Float64                   = 0.0
+    reward_function::AbstractCoreObjective = WeightedObjective()
 end

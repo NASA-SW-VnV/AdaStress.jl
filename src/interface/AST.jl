@@ -31,7 +31,7 @@ end
 """
 Reconstructs EnvironmentValue from single array.
 """
-function unflatten(mdp::ASTMDP{<:State, SampleAction}, action::Vector{<:Real})
+function unflatten(mdp::ASTMDP{<:State, SampleAction}, action::AbstractVector{<:Real})
 	value = EnvironmentValue()
 	env = environment(mdp.sim)
 
@@ -104,6 +104,6 @@ function ASTMDP(sim::BlackBox; kwargs...)
     return mdp
 end
 
-convert_a(mdp::ASTMDP{<:State, SampleAction}, action::Vector{<:Real}) = SampleAction(unflatten(mdp, action))
+convert_a(mdp::ASTMDP{<:State, SampleAction}, action::AbstractVector{<:Real}) = SampleAction(unflatten(mdp, action))
 convert_a(::ASTMDP{<:State, SampleAction}, action::EnvironmentValue) = SampleAction(action)
 convert_a(::ASTMDP{<:State, SeedAction}, action::UInt32) = SeedAction(action)

@@ -9,10 +9,10 @@ FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flag
 Solver-side client. Interacts with server via TCP.
 """
 Base.@kwdef mutable struct ASTClient <: CommonRLInterface.AbstractEnv
-    ip::IPAddr=IPv4(0)                          # ip of server
-    port::Int64=2000                            # server port
-    conn::Union{TCPSocket, Nothing}=nothing
-    verbose::Bool=false
+    ip::IPAddr                      = IPv4(0)   # ip of server
+    port::Int64                     = 2000      # server port
+    conn::Union{TCPSocket, Nothing} = nothing
+    verbose::Bool                   = false
 end
 
 """
@@ -84,11 +84,11 @@ end
 Simulation-side server. Interacts with client via TCP.
 """
 Base.@kwdef mutable struct ASTServer <: CommonRLInterface.AbstractEnv
-    ip::IPAddr=getipaddr()                              # address(es) to listen on
-    port::Int64=2000                                    # port to listen on
-    serv::Union{Sockets.TCPServer, Nothing}=nothing
+    ip::IPAddr                              = getipaddr()  # address(es) to listen on
+    port::Int64                             = 2000         # port to listen on
+    serv::Union{Sockets.TCPServer, Nothing} = nothing
     mdp::ASTMDP
-    verbose::Bool=false
+    verbose::Bool                           = false
 end
 
 """
