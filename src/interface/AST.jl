@@ -1,7 +1,7 @@
 """
 Samples environment, returning EnvironmentValue or array (default).
 """
-function Base.rand(env::Environment; flat::Bool=true)
+function Base.rand(env::Environment; flat::Bool=false)
 	value = EnvironmentValue(k => rand(dist) for (k, dist) in env)
 	return flat ? flatten(env, value) : value
 end
@@ -105,4 +105,5 @@ function ASTMDP(sim::BlackBox; kwargs...)
 end
 
 convert_a(mdp::ASTMDP{<:State, SampleAction}, action::AbstractVector{<:Real}) = SampleAction(unflatten(mdp, action))
+convert_a(::ASTMDP{<:State, SampleAction}, action::EnvironmentValue) = SampleAction(action)
 convert_a(::ASTMDP{<:State, SeedAction}, action::UInt32) = SeedAction(action)
