@@ -42,14 +42,15 @@ export
     WeightedReward,
     VectorReward
 
+include("types.jl")
 include("utils.jl")
 include("heuristics.jl")
 include("rewards.jl")
-include("types.jl")
 include("BlackBox.jl")
 include("GrayBox.jl")
 include("AST.jl")
 include("RL.jl")
-include("remote.jl")
+include("remote/client.jl")
+include("remote/server.jl")
 
 end

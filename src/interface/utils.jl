@@ -5,8 +5,9 @@ RNG_TEMP = deepcopy(Random.default_rng())
 
 """
 Partial function application transforming f(s,s') to f(s)(s').
-Constructs anonymous function out of expression with input mdp::ASTMDP.
+Constructs anonymous function out of expression with input mdp′::ASTMDP, where
+mdp′ represents the post-step mdp.
 """
 macro defer(expr)
-    esc(:(mdp -> $expr))
+    esc(:(mdp′::ASTMDP -> $expr))
 end
