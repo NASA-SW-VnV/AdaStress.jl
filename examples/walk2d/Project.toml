@@ -1,3 +1,5 @@
 [deps]
+AdaStress = "f8632b6a-8763-4da0-bfaf-5f7707adef25"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+NeuralVerification = "146f25fa-00e7-11e9-3ae5-fdbac6e12fa7"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
