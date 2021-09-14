@@ -3,6 +3,7 @@ Provides solvers for AST MDPs.
 """
 module Solvers
 
+using AdaStress: exclude
 using DataStructures
 import DataStructures: enqueue!
 
@@ -20,11 +21,10 @@ export
 
 include("types.jl")
 include("utils.jl")
-include("global/sac/SoftActorCritic.jl")
-include("local/mcs/MonteCarloSearch.jl")
-include("local/mcts/MonteCarloTreeSearch.jl")
+exclude("global/SoftActorCritic")
+include("local/MonteCarloSearch/MonteCarloSearch.jl")
+include("local/MonteCarloTreeSearch/MonteCarloTreeSearch.jl")
 
-using .SoftActorCritic
 using .MonteCarloSearch
 using .MonteCarloTreeSearch
 
