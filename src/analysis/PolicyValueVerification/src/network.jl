@@ -97,7 +97,7 @@ end
 Converts policy from actor-critic object to neural network.
 Represents concatenation and squashing with configurations of ReLUs.
 """
-function policy_network(ac::MLPActorCritic; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
+function policy_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
     # Dimensions and parameters
     n_obs = size(ac.pi.net.layers[1].W, 2)
     n_act = size(ac.pi.mu_layer.W, 1)
@@ -139,7 +139,7 @@ end
 """
 Converts actor-critic object to extended neural network representing ensemble of values.
 """
-function values_network(ac::MLPActorCritic; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
+function values_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
     # Compute policy network
     network = policy_network(ac; act_mins=act_mins, act_maxs=act_maxs)
     layers = network.nnet.layers
@@ -165,7 +165,7 @@ end
 """
 Converts actor-critic object to extended neural network representing mean of ensemble.
 """
-function mean_network(ac::MLPActorCritic; act_mins::Vector{Float64}, act_maxs::Vector{Float64}, s::Float64=0.0)
+function mean_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64}, s::Float64=0.0)
     network = values_network(ac; act_mins=act_mins, act_maxs=act_maxs)
     layers = network.nnet.layers
 
@@ -204,7 +204,7 @@ end
 Converts actor-critic object to extended neural network representing spread of ensemble
 (mean absolute deviation).
 """
-function spread_network(ac::MLPActorCritic; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
+function spread_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
     network = values_network(ac; act_mins=act_mins, act_maxs=act_maxs)
     layers = network.nnet.layers
 
