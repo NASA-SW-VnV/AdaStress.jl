@@ -69,8 +69,8 @@ end
 Pads front of Flux.Dense layer and converts to nnet layer.
 """
 function fpad(l::Dense, sz::Int64)
-    W = fpad_id(l.W, sz)
-    b = fpad(l.b, sz)
+    W = fpad_id(l.weight, sz)
+    b = fpad(l.bias, sz)
     σ = func_translate(l.σ)
     return Layer(W, b, σ)
 end
@@ -99,8 +99,8 @@ Represents concatenation and squashing with configurations of ReLUs.
 """
 function policy_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
     # Dimensions and parameters
-    n_obs = size(ac.pi.net.layers[1].W, 2)
-    n_act = size(ac.pi.mu_layer.W, 1)
+    n_obs = size(ac.pi.net.layers[1].weight, 2)
+    n_act = size(ac.pi.mu_layer.weight, 1)
     steps = zeros(n_obs)
     layers = []
 
@@ -154,8 +154,8 @@ function values_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
 
     # Concatenate critics
     for ls in zip((q -> q.q).(ac.qs)...)
-        W = block_diag((l -> l.W).(ls)...)
-        b = vcat((l -> l.b).(ls)...)
+        W = block_diag((l -> l.weight).(ls)...)
+        b = vcat((l -> l.bias).(ls)...)
         σ = func_translate(ls[1].σ)
         push!(layers, Layer(W, b, σ))
     end
