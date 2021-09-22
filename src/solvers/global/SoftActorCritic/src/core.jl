@@ -171,29 +171,6 @@ function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=
 end
 
 """
-Recursively transfers structure to CPU in-place.
-"""
-function to_cpu!(x::Any, level::Int64=2)
-	level < 1 && return
-    if x isa Vector
-        to_cpu!.(x, level)
-    end
-    for f in fieldnames(typeof(x))
-        xf = getfield(x, f)
-        level == 1 ? setfield!(x, f, cpu(xf)) : to_cpu!(xf, level - 1)
-    end
-end
-
-"""
-Recursively transfers copy of structure to CPU.
-"""
-function to_cpu(x::Any, args...)
-    y = deepcopy(x)
-    to_cpu!(y, args...)
-    return y
-end
-
-"""
 Defines native softplus function to avoid CUDA bugs. #TODO: removable?
 """
 softplus(x::Real) = x > 0 ? x + log(1 + exp(-x)) : log(1 + exp(x))
