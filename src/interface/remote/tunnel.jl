@@ -1,5 +1,5 @@
 
-const TUNNEL_SOCKET = Sys.iswindows() ? "" : joinpath(homedir(), ".ssh", "adastress.socket")
+const TUNNEL_SOCK = Sys.iswindows() ? "" : joinpath(homedir(), ".ssh", "adastress.sock")
 const TUNNEL_PROC = Ref(0)
 
 """
@@ -21,7 +21,7 @@ function open_tunnel(obj::Union{ASTClient, ASTServer}, remote::String, remote_po
         """
         readline()
     else
-        ssh_args = `-fN -M -S $TUNNEL_SOCKET -$F $p1:localhost:$p2 $remote`
+        ssh_args = `-fN -M -S $TUNNEL_SOCK -$F $p1:localhost:$p2 $remote`
         Base.run(`ssh $ssh_args`)
     end
 
@@ -39,7 +39,7 @@ function close_tunnel()
         Base.run(`cmd /c powershell $pwsh_cmd`)
         TUNNEL_PROC[] = 0
     else
-        ssh_args = `-S $TUNNEL_SOCKET -O exit ""`
+        ssh_args = `-S $TUNNEL_SOCK -O exit ""`
         Base.run(`ssh $ssh_args`)
     end
     @info "Tunnel is closed."
