@@ -62,6 +62,7 @@ function connect!(client::ASTClient; remote::String, remote_port::Int64=1812, ex
 
     dt = @elapsed client.conn = connect(client.ip, client.port)
     @info "Connected to AST server in $dt seconds." client.conn
+    return
 end
 
 """

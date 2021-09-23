@@ -29,8 +29,8 @@ end
 """
 Constructor for server.
 """
-function ASTServer(mdp::ASTMDP, ip::IPAddr, port::Int64; kwargs...)
-    ASTServer(; mdp=mdp, ip=ip, port=port, kwargs...)
+function ASTServer(mdp::ASTMDP; kwargs...)
+    ASTServer(; mdp=mdp, kwargs...)
 end
 
 """
@@ -104,6 +104,7 @@ function connect!(server::ASTServer; remote::String, remote_port::Int64=1812, ex
 
     server.serv = listen(server.ip, server.port)
     run(server)
+    return
 end
 
 """
