@@ -97,11 +97,9 @@ end
 Connects server, optionally through SSH tunnel.
 Optional argument `remote` should be of the form `user@machine`.
 """
-function connect!(server::ASTServer; remote::String, remote_port::Int64=1812, external::Bool=false)
+function connect!(server::ASTServer; remote::String, remote_port::Int64=1812)
     disconnect!(server)
-    !isempty(remote) && !external && open_tunnel(server, remote, remote_port)
-    server.tunnel = external ? true : server.tunnel
-
+    !isempty(remote) && open_tunnel(server, remote, remote_port)
     server.serv = listen(server.ip, server.port)
     run(server)
     return
@@ -115,7 +113,7 @@ function disconnect!(server::ASTServer)
         close(server.serv)
         server.serv = nothing
     end
-
     server.tunnel && close_tunnel()
+    server.tunnel = false
     return
 end

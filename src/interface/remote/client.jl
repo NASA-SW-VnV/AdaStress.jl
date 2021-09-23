@@ -55,13 +55,10 @@ end
 Connects client to server, optionally through SSH tunnel.
 Optional argument `remote` should be of the form `user@machine`.
 """
-function connect!(client::ASTClient; remote::String, remote_port::Int64=1812, external::Bool=false)
+function connect!(client::ASTClient; remote::String, remote_port::Int64=1812)
     disconnect!(client)
-    !isempty(remote) && !external && open_tunnel(client, remote, remote_port)
-    client.tunnel = external ? true : server.tunnel
-
-    dt = @elapsed client.conn = connect(client.ip, client.port)
-    @info "Connected to AST server in $dt seconds." client.conn
+    !isempty(remote) && open_tunnel(client, remote, remote_port)
+    client.conn = connect(client.ip, client.port)
     return
 end
 
@@ -73,7 +70,7 @@ function disconnect!(client::ASTClient)
         close(client.conn)
         client.conn = nothing
     end
-
     client.tunnel && close_tunnel()
+    client.tunnel = false
     return
 end
