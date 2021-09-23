@@ -46,25 +46,22 @@ Applies converted action to environment and returns reward.
 """
 function act!(mdp::ASTMDP{<:State, A}, a::A) where A <: Action
     # rewards (partial application)
-    event = mdp.reward.episodic && isterminal(mdp.sim) && wasevent(sim) ||
-            !mdp.reward.episodic && isevent(mdp.sim)
+    event = mdp.episodic ? isterminal(mdp.sim) && isevent(mdp.sim) : isevent(mdp.sim)
     bonus = event ? mdp.reward.event_bonus : 0.0
     heur = mdp.reward.heuristic(mdp)
-    rew = A <: SampleAction ? reward(mdp.sim, a.sample) : reward(mdp.sim)
+    rew = custom_reward(mdp.sim, a)
 
     # stepping and likelihood evaluation
     logp = evaluate!(mdp, a)
 
     # final reward calculation
-    r = mdp.reward.reward_function(logp, bonus, heur(mdp))
-    r += rew isa Function ? rew(mdp.sim) : rew
-    return r
+    return mdp.reward.reward_function(logp, bonus, heur(mdp)) + rew(mdp.sim)
 end
 
 """
 Returns Boolean indicating termination status.
 """
-terminated(mdp::ASTMDP) = isterminal(mdp.sim) || (!mdp.reward.episodic && isevent(mdp.sim))
+terminated(mdp::ASTMDP) = isterminal(mdp.sim) || !mdp.episodic && isevent(mdp.sim)
 
 # Connects AdaStress interface to CommonRLInterface
 
