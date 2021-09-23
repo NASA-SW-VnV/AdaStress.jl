@@ -19,6 +19,8 @@ export
     GrayBox,
     Environment,
     EnvironmentValue,
+    ObservableState,
+    UnobservableState,
     SampleAction,
     SeedAction,
     ASTClient,
