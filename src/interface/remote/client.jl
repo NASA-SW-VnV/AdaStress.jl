@@ -1,4 +1,4 @@
-#TODO: security, robustness, isopen checks, reconnection, ssh
+#TODO: robustness, isopen checks, reconnection
 
 FLAGS = [:reset!, :actions, :observe, :act!, :terminated]
 FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flags <-> bytes
@@ -7,38 +7,11 @@ FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flag
 Solver-side client. Interacts with server via TCP.
 """
 Base.@kwdef mutable struct ASTClient{S<:State, A<:Action} <: AbstractASTMDP{S, A}
-    ip::IPAddr                      = IPv4(0)   # ip of server
-    port::Int64                     = 2000      # server port
+    ip::IPAddr                      = ip"::1"   # ip of server
+    port::Int64                     = 1812      # server port
     conn::Union{TCPSocket, Nothing} = nothing
+    tunnel::Bool                    = false
     verbose::Bool                   = false
-end
-
-"""
-Disconnects client from server.
-"""
-function disconnect!(client::ASTClient)
-    if client.conn !== nothing
-        close(client.conn)
-        client.conn = nothing
-    end
-end
-
-"""
-Connects client with server.
-"""
-function connect!(client::ASTClient)
-    disconnect!(client)
-    dt = @elapsed client.conn = connect(client.ip, client.port)
-    @info "Connected to AST server in $dt seconds." client.conn
-end
-
-"""
-Connects client with server at new location.
-"""
-function connect!(client::ASTClient, ip::IPAddr, port::Int64)
-    client.ip = ip
-    client.port = port
-    connect!(client)
 end
 
 """
@@ -76,4 +49,30 @@ end
 function terminated(client::ASTClient)
     client.verbose && @info "Sending request to server: `terminated`"
     call(client, terminated)
+end
+
+"""
+Connects client to server, optionally through SSH tunnel.
+Optional argument `remote` should be of the form `user@machine`.
+"""
+function connect!(client::ASTClient; remote::String, remote_port::Int64=1812, external::Bool=false)
+    disconnect!(client)
+    !isempty(remote) && !external && open_tunnel(client, remote, remote_port)
+    client.tunnel = external ? true : server.tunnel
+
+    dt = @elapsed client.conn = connect(client.ip, client.port)
+    @info "Connected to AST server in $dt seconds." client.conn
+end
+
+"""
+Disconnects client from server.
+"""
+function disconnect!(client::ASTClient)
+    if client.conn !== nothing
+        close(client.conn)
+        client.conn = nothing
+    end
+
+    client.tunnel && close_tunnel()
+    return
 end

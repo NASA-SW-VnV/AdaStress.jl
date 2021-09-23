@@ -17,11 +17,12 @@ reseed(seed::UInt32, token::Token) = UInt32(hash((seed, token.data)) % typemax(U
 Simulation-side server. Interacts with client via TCP.
 """
 Base.@kwdef mutable struct ASTServer
-    ip::IPAddr                              = getipaddr()  # address(es) to listen on
-    port::Int64                             = 2000         # port to listen on
+    ip::IPAddr                              = ip"::1"  # address(es) to listen on
+    port::Int64                             = 1812     # port to listen on
     serv::Union{Sockets.TCPServer, Nothing} = nothing
     mdp::ASTMDP
     token::Union{Token, Nothing}            = nothing
+    tunnel::Bool                            = false
     verbose::Bool                           = false
 end
 
@@ -30,16 +31,6 @@ Constructor for server.
 """
 function ASTServer(mdp::ASTMDP, ip::IPAddr, port::Int64; kwargs...)
     ASTServer(; mdp=mdp, ip=ip, port=port, kwargs...)
-end
-
-"""
-Disconnects server.
-"""
-function disconnect!(server::ASTServer)
-    if server.serv !== nothing
-        close(server.serv)
-        server.serv = nothing
-    end
 end
 
 """
@@ -103,19 +94,27 @@ function run(server::ASTServer)
 end
 
 """
-Connects server.
+Connects server, optionally through SSH tunnel.
+Optional argument `remote` should be of the form `user@machine`.
 """
-function connect!(server::ASTServer)
+function connect!(server::ASTServer; remote::String, remote_port::Int64=1812, external::Bool=false)
     disconnect!(server)
+    !isempty(remote) && !external && open_tunnel(server, remote, remote_port)
+    server.tunnel = external ? true : server.tunnel
+
     server.serv = listen(server.ip, server.port)
     run(server)
 end
 
 """
-Connects server at new location.
+Disconnects server.
 """
-function connect!(server::ASTServer, ip::IPAddr, port::Int64)
-    server.ip = ip
-    server.port = port
-    connect!(server)
+function disconnect!(server::ASTServer)
+    if server.serv !== nothing
+        close(server.serv)
+        server.serv = nothing
+    end
+
+    server.tunnel && close_tunnel()
+    return
 end

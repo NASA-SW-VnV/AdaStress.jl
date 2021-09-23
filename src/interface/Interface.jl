@@ -52,5 +52,6 @@ include("AST.jl")
 include("RL.jl")
 include("remote/client.jl")
 include("remote/server.jl")
+include("remote/tunnel.jl")
 
 end
