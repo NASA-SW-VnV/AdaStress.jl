@@ -52,3 +52,15 @@ allow efficient calculation of R(s,s') = R(s)(s'). Should not alter simulation. 
 documentation for more details.
 """
 reward(sim::BlackBox) = 0.0
+
+"""
+Checks whether simulation encountered an event during episode. Should be implemented only
+for episodic simulations where event data is available at end of episode.
+"""
+wasevent(sim::GrayBox)::Bool = unimplemented()
+
+"""
+Returns minimum distance to event across entire episode, also known as `miss distance`.
+Should be implemented only for episodic simulations where distance data is available at end of episode.
+"""
+missdistance(sim::GrayBox)::Bool = unimplemented()

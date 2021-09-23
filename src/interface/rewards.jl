@@ -36,4 +36,5 @@ Base.@kwdef mutable struct Reward <: AbstractReward
     heuristic::AbstractDistanceHeuristic   = GradientHeuristic()
     event_bonus::Float64                   = 0.0
     reward_function::AbstractCoreObjective = WeightedObjective()
+    episodic::Bool                         = true
 end

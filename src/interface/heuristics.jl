@@ -34,6 +34,16 @@ function reset!(h::MinimumHeuristic)
 end
 
 """
+Retroactive minimum distance across episodic, for episodic MDPs.
+"""
+struct MissHeuristic <: AbstractDistanceHeuristic end
+
+function (::MissHeuristic)(mdp::ASTMDP)
+    d_miss = isterminal(mdp.sim) ? missdistance(mdp.sim) : 0.0
+    @defer d_miss
+end
+
+"""
 Null heuristic. Returns zero.
 """
 struct NullHeuristic <: AbstractDistanceHeuristic end
