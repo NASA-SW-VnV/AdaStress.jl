@@ -43,18 +43,19 @@ Requests ping from ASTServer.
 """
 function ping(client::ASTClient)
     request = Dict(:f => 0x0)
-    t1 = now()
+    t = now()
     bson(client.conn, request)
     BSON.load(client.conn) #TODO: include info payload
-    t2 = now()
-    @info "ASTServer responded in $(t2 - t1)."
+    dt = now() - t
+    @info "ASTServer responded in $dt."
+    return dt
 end
 
 """
 Connects client to server, optionally through SSH tunnel.
 Optional argument `remote` should be of the form `user@machine`.
 """
-function connect!(client::ASTClient; remote::String, remote_port::Int64=1812)
+function connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
     disconnect!(client)
     !isempty(remote) && open_tunnel(client, remote, remote_port)
     client.conn = connect(client.ip, client.port)
