@@ -41,13 +41,15 @@ isterminal(sim::GrayBox)::Bool = unimplemented()
 
 
 """
-Checks whether simulation is in an event state.
+Checks whether simulation is in an event state. For episodic simulation, checks whether event
+occurred during episode.
 """
 isevent(sim::GrayBox)::Bool = unimplemented()
 
 
 """
 Returns custom metric of distance to event. For best results, metric should depend only on current state.
+For episodic simulation, returns minimum distance to event across entire episode (miss distance).
 """
 distance(sim::GrayBox)::Real = unimplemented()
 
@@ -73,15 +75,3 @@ allow efficient calculation of R(s,a,s') = R(s,a)(s'). Should not alter simulati
 documentation for more details.
 """
 reward(sim::GrayBox, x::EnvironmentValue) = 0.0
-
-"""
-Checks whether simulation encountered an event during episode. Should be implemented only
-for episodic simulations where event data is available at end of episode.
-"""
-wasevent(sim::GrayBox)::Bool = unimplemented()
-
-"""
-Returns minimum distance to event across entire episode, also known as `miss distance`.
-Should be implemented only for episodic simulations where distance data is available at end of episode.
-"""
-missdistance(sim::GrayBox)::Bool = unimplemented()
