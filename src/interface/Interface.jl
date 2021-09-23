@@ -36,6 +36,8 @@ export
     flatten,
     unflatten,
     connect!,
+    disconnect!,
+    ping,
     @fix,
 
     DistanceGradient,

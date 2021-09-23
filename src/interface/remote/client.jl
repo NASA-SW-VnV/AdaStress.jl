@@ -39,16 +39,15 @@ act!(client::ASTClient, action) = call(client, act!, action)
 terminated(client::ASTClient) = call(client, terminated)
 
 """
-Requests ping from ASTServer.
+Requests ping from ASTServer. Returns round-trip time in seconds.
 """
 function ping(client::ASTClient)
     request = Dict(:f => 0x0)
-    t = now()
+    t = () -> datetime2unix(now())
+    t1 = t()
     bson(client.conn, request)
-    BSON.load(client.conn) #TODO: include info payload
-    dt = now() - t
-    @info "ASTServer responded in $dt."
-    return dt
+    BSON.load(client.conn) #TODO: include info payload?
+    return t() - t1
 end
 
 """
@@ -59,7 +58,8 @@ function connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
     disconnect!(client)
     !isempty(remote) && open_tunnel(client, remote, remote_port)
     client.conn = connect(client.ip, client.port)
-    ping(client)
+    t_ms = Int64(1000 * round(ping(client); digits=3))
+    @info "ASTServer responded in $t_ms milliseconds."
     return
 end
 
