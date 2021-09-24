@@ -22,46 +22,44 @@ function call(client::ASTClient, f::Function, args...)
     flag = Symbol(f)
     request = Dict(:f => FMAP(flag), :a => args)
     bson(client.conn, request)
+    client.verbose && @info "Sending request to server:" request
     response = BSON.load(client.conn)
+    client.verbose && @info "Received response from server:" response
     return response[:r]
 end
 
-function reset!(client::ASTClient)
-    client.verbose && @info "Sending request to server: `reset!`"
-    call(client, reset!)
-end
+reset!(client::ASTClient) = call(client, reset!)
 
-function actions(client::ASTClient)
-    client.verbose && @info "Sending request to server: `actions`"
-    call(client, actions)
-end
+actions(client::ASTClient) = call(client, actions)
 
-function observe(client::ASTClient)
-    client.verbose && @info "Sending request to server: `observe`"
-    call(client, observe)
-end
+observe(client::ASTClient) = call(client, observe)
 
-function act!(client::ASTClient, action)
-    client.verbose && @info "Sending request to server: `act!`"
-    call(client, act!, action)
-end
+act!(client::ASTClient, action) = call(client, act!, action)
 
-function terminated(client::ASTClient)
-    client.verbose && @info "Sending request to server: `terminated`"
-    call(client, terminated)
+terminated(client::ASTClient) = call(client, terminated)
+
+"""
+Requests ping from ASTServer. Returns round-trip time in seconds.
+"""
+function ping(client::ASTClient)
+    request = Dict(:f => 0x0)
+    t = () -> datetime2unix(now())
+    t1 = t()
+    bson(client.conn, request)
+    BSON.load(client.conn) #TODO: include info payload?
+    return t() - t1
 end
 
 """
 Connects client to server, optionally through SSH tunnel.
 Optional argument `remote` should be of the form `user@machine`.
 """
-function connect!(client::ASTClient; remote::String, remote_port::Int64=1812, external::Bool=false)
+function connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
     disconnect!(client)
-    !isempty(remote) && !external && open_tunnel(client, remote, remote_port)
-    client.tunnel = external ? true : server.tunnel
-
-    dt = @elapsed client.conn = connect(client.ip, client.port)
-    @info "Connected to AST server in $dt seconds." client.conn
+    !isempty(remote) && open_tunnel(client, remote, remote_port)
+    client.conn = connect(client.ip, client.port)
+    t_ms = Int64(1000 * round(ping(client); digits=3))
+    @info "ASTServer responded in $t_ms milliseconds."
     return
 end
 
@@ -73,7 +71,7 @@ function disconnect!(client::ASTClient)
         close(client.conn)
         client.conn = nothing
     end
-
     client.tunnel && close_tunnel()
+    client.tunnel = false
     return
 end
