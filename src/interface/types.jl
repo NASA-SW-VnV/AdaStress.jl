@@ -13,7 +13,7 @@ unimplemented() = throw(UnimplementedError())
 """
 Stores distributions of environment variables.
 """
-const Environment = Dict{Symbol, <:Sampleable}
+const Environment = Dict{Symbol, Sampleable}
 
 """
 Stores values of environment samples.
