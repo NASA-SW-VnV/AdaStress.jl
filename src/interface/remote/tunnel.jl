@@ -1,9 +1,18 @@
+#=
+These functions automatically manage SSH tunneling, allowing a remote AdaStress architecture
+to be established over secure channels. They do not need to be invoked directly, since they
+are used by the `connect!` and `disconnect!` functions when the appropriate keyword
+arguments are set.
+
+The Linux/Apple version uses SSH multiplexing to maintain a handle on the SSH session, while
+the Windows version stores the raw SSH process id.
+=#
 
 const TUNNEL_SOCK = Sys.iswindows() ? "" : joinpath(homedir(), ".ssh", "adastress.sock")
 const TUNNEL_PROC = Ref(0)
 
 """
-Opens SSH tunnel to/from remote server. Called during `connect!` if keywords are set.
+Opens SSH tunnel to/from remote server.
 """
 function open_tunnel(obj::Union{ASTClient, ASTServer}, remote::String, remote_port::Int64)
 
@@ -31,7 +40,7 @@ function open_tunnel(obj::Union{ASTClient, ASTServer}, remote::String, remote_po
 end
 
 """
-Closes SSH tunnel to/from remote server. Called during `disconnect!` if keywords are set.
+Closes SSH tunnel to/from remote server.
 """
 function close_tunnel()
     if Sys.iswindows()
