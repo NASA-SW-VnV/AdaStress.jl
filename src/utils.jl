@@ -8,10 +8,11 @@ using Scratch
 using Suppressor
 using TOML
 
-ENV_DIR = ""                                        # directory of submodule environment
-const DEV_DIR = joinpath(first(DEPOT_PATH), "dev")  # directory of packages added via `dev`
-const PKG_NAME = "$(@__MODULE__)"                   # top-level package name (AdaStress)
-const SUBMODULES = Dict{String, String}()           # submodule table
+ENV_DIR = ""                                                # directory of submodule environment
+const DEV_DIR = mkpath(joinpath(first(DEPOT_PATH), "dev"))  # directory of packages added via `dev`
+const PKG_NAME = "$(@__MODULE__)"                           # top-level package name (AdaStress)
+const PKG_PATH = dirname(dirname(pathof(@__MODULE__)))      # top-level package directory
+const SUBMODULES = Dict{String, String}()                   # submodule table
 
 """
 Associates package directory to main package via submodule table instead of code loading.
@@ -60,7 +61,7 @@ function enable(submodule::String; verbose::Bool=true)
     try
         @suppress begin
             Pkg.activate(ENV_DIR)
-            Pkg.develop(PKG_NAME) # updates AdaStress if necessary
+            Pkg.develop(path=PKG_PATH) # updates AdaStress if necessary
 
             dev_pkgs = readdir(DEV_DIR)
             for (dep, url) in unregistered_deps(submodule)
