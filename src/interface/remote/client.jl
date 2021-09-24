@@ -43,11 +43,10 @@ Requests ping from ASTServer. Returns round-trip time in seconds.
 """
 function ping(client::ASTClient)
     request = Dict(:f => 0x0)
-    t = () -> datetime2unix(now())
-    t1 = t()
+    t1 = time()
     bson(client.conn, request)
     BSON.load(client.conn) #TODO: include info payload?
-    return t() - t1
+    return time() - t1
 end
 
 """
