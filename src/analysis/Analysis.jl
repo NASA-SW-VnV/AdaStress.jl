@@ -3,10 +3,8 @@ Provides analysis framework for solutions.
 """
 module Analysis
 
-include("pvv/PolicyValueVerification.jl")
+using AdaStress: exclude
 
-export PolicyValueVerification
-
-using .PolicyValueVerification
+exclude("PolicyValueVerification")
 
 end

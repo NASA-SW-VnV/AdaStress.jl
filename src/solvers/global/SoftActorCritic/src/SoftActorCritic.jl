@@ -12,8 +12,8 @@ export
     simulation_task,
     distributed_solve
 
-using ..Solvers
-import ..Solvers.solve
+using AdaStress.Solvers
+import AdaStress: Solvers.solve
 
 using BSON: @save
 using CommonRLInterface

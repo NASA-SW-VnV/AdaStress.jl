@@ -23,7 +23,7 @@ export
     refine!,
     refine_multiprocess!
 
-using ...Solvers.SoftActorCritic: MLPActorCritic #TODO: change to more general result type
+using AdaStress: GlobalResult
 
 using Distributed
 using Flux: Dense, relu
