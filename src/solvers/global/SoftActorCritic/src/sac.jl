@@ -6,7 +6,8 @@ function compute_loss_q(
 	ac_targ::MLPActorCritic,
 	data::NamedTuple,
 	gamma::Float64,
-	alpha::AbstractVector{Float32}
+	alpha::AbstractVector{Float32};
+    average::Bool = true
 )
 	o, a, r, o2, d = data
     qs = [q(o, a) for q in ac.qs]
@@ -14,8 +15,7 @@ function compute_loss_q(
 
     # Target q-values
     qs_pi_targ = [q(o2, a2) for q in ac_targ.qs]
-    # q_pi_targ = min.(qs_pi_targ...)
-    q_pi_targ = sum(qs_pi_targ) / length(qs_pi_targ)
+    q_pi_targ = average ? sum(qs_pi_targ) / length(qs_pi_targ) : min.(qs_pi_targ...)
     backup = r .+ Float32(gamma) .* (1.0f0 .- d) .* (q_pi_targ .- alpha .* logp_a2)
 
     # MSE loss against Bellman backup
@@ -27,12 +27,16 @@ end
 """
 Computes loss for current policy.
 """
-function compute_loss_pi(ac::MLPActorCritic, data::NamedTuple, alpha::AbstractVector{Float32})
+function compute_loss_pi(
+    ac::MLPActorCritic,
+    data::NamedTuple,
+    alpha::AbstractVector{Float32};
+    average::Bool = true
+)
     o = data.obs
     pi, logp_pi = ac.pi(o)
     qs_pi = [q(o, pi) for q in ac.qs]
-    # q_pi = min.(qs_pi...)
-    q_pi = sum(qs_pi) / length(qs_pi)
+    q_pi = average ? sum(qs_pi) / length(qs_pi) : min.(qs_pi...)
 
     # Entropy-regularized policy loss
     loss_pi = mean(alpha .* logp_pi .- q_pi)
@@ -158,50 +162,6 @@ function test_agent(
 end
 
 """
-Converts DateTime to valid cross-platform filename.
-"""
-function dt_to_fn(dt::DateTime)
-    dt = round(dt, Dates.Second)
-    str = replace("$dt", ":" => "-")
-    return "saved_" * str * ".bson"
-end
-
-"""
-Converts filename to corresponding unix time (or NaN)
-"""
-function fn_to_t(fn::String)
-    str = replace(fn, r"saved_(.*T)(.*)-(.*)-(.*).bson" => s"\1\2:\3:\4")
-    return try datetime2unix(DateTime(str)) catch; NaN end
-end
-
-"""
-Saves AC networks to specified directory, with optional maximum number of saves.
-"""
-function checkpoint(ac::MLPActorCritic, save_dir::String, max_saved::Int)
-
-    # Delete earliest save if maximum number is exceeded
-    if max_saved > 0
-        files = readdir(save_dir)
-        times = [fn_to_t(file) for file in files]
-        if !isempty(times) && sum(@. !isnan(times)) >= max_saved
-            i_min = argmin((x -> isnan(x) ? Inf : x).(times))
-            rm(joinpath(save_dir, files[i_min]))
-        end
-    end
-
-    # Save AC agent
-    filename = joinpath(save_dir, dt_to_fn(now()))
-	@save filename ac
-end
-
-"""
-Generates values to display and save from display tuples
-"""
-function gen_showvalues(epoch::Int64, disptups::Vector{<:Tuple})
-    return () -> [(:epoch, epoch), ((sym, isempty(hist) ? NaN : hist[end]) for (sym, hist) in disptups)...]
-end
-
-"""
 Defines SAC solver
 """
 Base.@kwdef mutable struct SAC <: GlobalSolver
@@ -210,7 +170,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     act_dim::Int                                    # dimension of action space
     act_mins::Vector{Float64}                       # minimum values of actions
     act_maxs::Vector{Float64}                       # maximum values of actions
-    gamma::Float64 = 0.95                           # discount factor
+    gamma::Float64 = 0.999                          # discount factor
 
     # Replay buffer
     max_buffer_size::Int = 100000                   # maximum number of timesteps in buffer
@@ -248,7 +208,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     save::Bool = false                              # to enable checkpointing
     save_every::Int = 10000                         # steps between checkpoints
     save_dir::String = DEFAULT_SAVE_DIR             # directory to save checkpoints
-    max_saved::Int = 100                            # maximum number of checkpoints; set to
+    max_saved::Int = 0                              # maximum number of checkpoints; set to
                                                     # zero or negative for unlimited
 end
 
@@ -265,10 +225,11 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     ac_cpu = to_cpu(ac)
     alpha = [1.0f0] |> gpu
     total_steps = sac.steps_per_epoch * sac.epochs
+    mkpath(sac.save_dir)
 
     # Initialize displayed information and progress meter
     @debug "Solve" total_steps
-    disptups = [(:score, []), (:stdev, []), ((sym, []) for (sym, _) in sac.displays)...]
+    disp_tups = initialize(sac.displays)
     p = Progress(total_steps - sac.update_after)
 
     ep_ret, ep_len = 0.0, 0
@@ -302,7 +263,8 @@ function Solvers.solve(sac::SAC, env_fn::Function)
         # Actor-critic update
         if t > sac.update_after && t % sac.update_every == 0
             @debug "Updating models" t
-            for _ in 1:sac.num_batches
+            for b in 1:sac.num_batches
+                @debug "Batch" b
                 batch = sample_batch(sac.buffer, sac.batch_size)
                 update(ac, ac_targ, batch, sac.q_optimizer, sac.pi_optimizer, sac.polyak,
                     sac.gamma, sac.alpha_optimizer, alpha, sac.target_entropy)
@@ -314,16 +276,14 @@ function Solvers.solve(sac::SAC, env_fn::Function)
         epoch = (t - 1) ÷ sac.steps_per_epoch + 1
         if t % sac.steps_per_epoch == 0
             # Update display values
-            dispvals = test_agent(ac_cpu, test_env, sac.displays, sac.max_ep_len, sac.num_test_episodes)
-            for ((_, hist), val) in zip(disptups, dispvals)
-                push!(hist, val)
-            end
+            disp_vals = test_agent(ac_cpu, test_env, sac.displays, sac.max_ep_len, sac.num_test_episodes)
+            update!(disp_tups, disp_vals)
 
             # Log info about epoch
             @debug("Evaluation",
-            	  alpha[],
-                  mean(mean.(params([q.q for q in ac.qs]))),
-            	  mean(mean.(params([ac.pi.net, ac.pi.mu_layer, ac.pi.log_std_layer])))
+            	  alpha,
+                  mean(mean.(params([q.q for q in ac_cpu.qs]))),
+            	  mean(mean.(params([ac_cpu.pi.net, ac_cpu.pi.mu_layer, ac_cpu.pi.log_std_layer])))
             )
         end
 
@@ -334,13 +294,13 @@ function Solvers.solve(sac::SAC, env_fn::Function)
 
         # Progress meter
         if t > sac.update_after
-            ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disptups))
+            ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disp_tups))
         end
     end
 
     # Save display values and replay buffer
     info = Dict{String, Any}()
-    for (sym, hist) in disptups
+    for (sym, hist) in disp_tups
         info[String(sym)] = hist
     end
 
