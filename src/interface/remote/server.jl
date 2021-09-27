@@ -17,29 +17,20 @@ reseed(seed::UInt32, token::Token) = UInt32(hash((seed, token.data)) % typemax(U
 Simulation-side server. Interacts with client via TCP.
 """
 Base.@kwdef mutable struct ASTServer
-    ip::IPAddr                              = getipaddr()  # address(es) to listen on
-    port::Int64                             = 2000         # port to listen on
+    ip::IPAddr                              = ip"::1"  # address(es) to listen on
+    port::Int64                             = 1812     # port to listen on
     serv::Union{Sockets.TCPServer, Nothing} = nothing
     mdp::ASTMDP
     token::Union{Token, Nothing}            = nothing
+    tunnel::Bool                            = false
     verbose::Bool                           = false
 end
 
 """
 Constructor for server.
 """
-function ASTServer(mdp::ASTMDP, ip::IPAddr, port::Int64; kwargs...)
-    ASTServer(; mdp=mdp, ip=ip, port=port, kwargs...)
-end
-
-"""
-Disconnects server.
-"""
-function disconnect!(server::ASTServer)
-    if server.serv !== nothing
-        close(server.serv)
-        server.serv = nothing
-    end
+function ASTServer(mdp::ASTMDP; kwargs...)
+    ASTServer(; mdp=mdp, kwargs...)
 end
 
 """
@@ -68,6 +59,33 @@ function set_password(server::ASTServer)
 end
 
 """
+Responds to ping from ASTClient.
+"""
+ping(::ASTServer) = Dict(:r => 0x0)
+
+"""
+Processes simulation request from client and constructs response.
+"""
+function respond(server::ASTServer, request::Dict)
+    # Interpret request.
+    sym = FMAP[request[:f]]
+    f = getproperty(Interface, sym)
+    args = request[:a]
+
+    # Process response.
+    if server.token !== nothing && sym == :act! && action_type(server.mdp) == SeedAction
+        seed = reseed(args[1], server.token)
+        args = (seed,)
+    end
+    r = f(server.mdp, args...)
+    if sym == :actions && action_type(server.mdp) == SampleAction
+        r = Dirac(rand(r)) # perform rand server-side
+    end
+
+    return Dict(:r => r)
+end
+
+"""
 Listens for incoming requests and executes function calls on MDP.
 Can handle multiple client connections asynchronously.
 """
@@ -79,43 +97,35 @@ function run(server::ASTServer)
         @async while true
             # Interpret request.
             request = BSON.load(conn)
-            sym = FMAP[request[:f]]
-            server.verbose && @info "Received request from client: `$sym`"
-            f = getproperty(Interface, sym)
-            args = request[:a]
-
-            # Process response
-            if server.token !== nothing && sym == :act! && action_type(server.mdp) == SeedAction
-                seed = reseed(args[1], server.token)
-                args = (seed,)
-            end
-            r = f(server.mdp, args...)
-            if sym == :actions && action_type(server.mdp) == SampleAction
-                r = Dirac(rand(r)) # perform rand server-side
-            end
-
-            # Send response.
-            response = Dict(:r => r)
-            server.verbose && @info "Sending response to client."
+            server.verbose && @info "Received request from client:" request
+            response = request[:f] == 0x0 ? ping(server) : respond(server, request)
             bson(conn, response)
+            server.verbose && @info "Sent response to client." response
         end
     end
 end
 
 """
-Connects server.
+Connects server, optionally through SSH tunnel.
+Optional argument `remote` should be of the form `user@machine`.
 """
-function connect!(server::ASTServer)
+function connect!(server::ASTServer; remote::String="", remote_port::Int64=1812)
     disconnect!(server)
+    !isempty(remote) && open_tunnel(server, remote, remote_port)
     server.serv = listen(server.ip, server.port)
     run(server)
+    return
 end
 
 """
-Connects server at new location.
+Disconnects server.
 """
-function connect!(server::ASTServer, ip::IPAddr, port::Int64)
-    server.ip = ip
-    server.port = port
-    connect!(server)
+function disconnect!(server::ASTServer)
+    if server.serv !== nothing
+        close(server.serv)
+        server.serv = nothing
+    end
+    server.tunnel && close_tunnel()
+    server.tunnel = false
+    return
 end

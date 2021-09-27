@@ -18,6 +18,8 @@ export
     GrayBox,
     Environment,
     EnvironmentValue,
+    ObservableState,
+    UnobservableState,
     SampleAction,
     SeedAction,
     ASTClient,
@@ -33,6 +35,8 @@ export
     flatten,
     unflatten,
     connect!,
+    disconnect!,
+    ping,
     @fix,
 
     DistanceGradient,
@@ -52,5 +56,6 @@ include("AST.jl")
 include("RL.jl")
 include("remote/client.jl")
 include("remote/server.jl")
+include("remote/tunnel.jl")
 
 end
