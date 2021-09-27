@@ -36,13 +36,15 @@ isterminal(sim::BlackBox)::Bool = unimplemented()
 
 
 """
-Checks whether simulation is in an event state.
+Checks whether simulation is in an event state. For episodic simulation, checks whether event
+occurred during episode.
 """
 isevent(sim::BlackBox)::Bool = unimplemented()
 
 
 """
 Returns custom metric of distance to event. For best results, metric should depend only on current state.
+For episodic simulation, returns minimum distance to event across entire episode (miss distance).
 """
 distance(sim::BlackBox)::Real = unimplemented()
 

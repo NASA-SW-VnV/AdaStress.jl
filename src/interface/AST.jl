@@ -90,16 +90,12 @@ end
 """
 Constructor for ASTMDP object. Infers various properties of MDP.
 """
-function ASTMDP(sim::GrayBox; kwargs...)
+function ASTMDP(sim::AbstractSimulation; kwargs...)
     reset!(sim)
-    mdp = ASTMDP{infer_state(sim), SampleAction}(; sim=sim, kwargs..., env_info=infer_info(environment(sim)))
-    global RNG_TEMP = deepcopy(mdp.rng)
-    return mdp
-end
-
-function ASTMDP(sim::BlackBox; kwargs...)
-    reset!(sim)
-	mdp = ASTMDP{infer_state(sim), SeedAction}(; sim=sim, kwargs...)
+    act_type = sim isa BlackBox ? SeedAction : SampleAction
+    env_info = sim isa BlackBox ? EnvironmentInfo() : infer_info(environment(sim))
+    mdp = ASTMDP{infer_state(sim), act_type}(; sim=sim, kwargs..., env_info=env_info)
+    mdp.reward.heuristic = mdp.episodic ? FinalHeuristic() : mdp.reward.heuristic
     global RNG_TEMP = deepcopy(mdp.rng)
     return mdp
 end

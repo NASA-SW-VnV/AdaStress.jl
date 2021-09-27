@@ -37,3 +37,9 @@ Base.@kwdef mutable struct Reward <: AbstractReward
     event_bonus::Float64                   = 0.0
     reward_function::AbstractCoreObjective = WeightedObjective()
 end
+
+"""
+Custom reward prcoessing from user.
+"""
+custom_reward(sim::GrayBox, a::SampleAction) = Functoid(reward(sim, a.sample))
+custom_reward(sim::BlackBox, ::SeedAction) = Functoid(reward(sim))

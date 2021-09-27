@@ -4,10 +4,12 @@ Temporary storage for any RNG of the same type as the global RNG.
 RNG_TEMP = deepcopy(Random.default_rng())
 
 """
-Partial function application transforming f(s,s') to f(s)(s').
-Constructs anonymous function out of expression with input mdp′::ASTMDP, where
-mdp′ represents the post-step mdp.
+Conditional function. Applies function if applicable, otherwise returns value. Useful for
+conditional partial function application.
 """
-macro defer(expr)
-    esc(:(mdp′::ASTMDP -> $expr))
+struct Functoid{T<:Any}
+    val::T
 end
+
+(f::Functoid{<:Any})(args...; kwargs...) = f.val
+(f::Functoid{<:Function})(args...; kwargs...) = f.val(args...; kwargs...)
