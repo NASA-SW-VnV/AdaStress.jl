@@ -2,7 +2,7 @@ const LOG_STD_MAX = 2
 const LOG_STD_MIN = -20
 
 """
-Creates multilayer perceptron with given parameters.
+Create multilayer perceptron with given parameters.
 """
 function mlp(sizes::Vector{Int}, activation::Function, output_activation::Function=identity)
     layers = []
@@ -14,7 +14,7 @@ function mlp(sizes::Vector{Int}, activation::Function, output_activation::Functi
 end
 
 """
-Gaussian policy object.
+Gaussian MLP policy.
 """
 mutable struct SquashedGaussianMLPActor
     net::Chain                              # primary network
@@ -50,7 +50,7 @@ function SquashedGaussianMLPActor(
 end
 
 """
-Calculates log pdf of normal distribution.
+Calculate log pdf of normal distribution.
 """
 function normal_logpdf(μ::AbstractMatrix{Float32}, σ::AbstractMatrix{Float32}, x::AbstractMatrix{Float32})
     lz = sum(-0.5f0 .* ((x .- μ) ./ σ).^2; dims=1)
@@ -61,7 +61,7 @@ function normal_logpdf(μ::AbstractMatrix{Float32}, σ::AbstractMatrix{Float32},
 end
 
 """
-Calculates random normal deviates on GPU (in-place).
+Calculate random normal deviates on GPU (in-place).
 """
 function normal_deviates(rng::AbstractRNG, sz::NTuple{N, Int64}) where N
     z = CuArray{Float32}(undef, sz)
@@ -71,7 +71,7 @@ end
 Zygote.@nograd normal_deviates
 
 """
-Retrieves action (and optional log probability) from policy.
+Retrieve action (and optional log probability) from policy.
 """
 function (pi::SquashedGaussianMLPActor)(
 			obs::AbstractArray{Float32},
@@ -119,7 +119,7 @@ function (pi::SquashedGaussianMLPActor)(
 end
 
 """
-Q-value function object.
+Q-value function.
 """
 mutable struct MLPQFunction
     q::Chain
@@ -131,7 +131,7 @@ function MLPQFunction(obs_dim::Int, act_dim::Int, hidden_sizes::Vector{Int}, act
 end
 
 """
-Determines Q-value of observation and action.
+Determine Q-value of observation and action.
 """
 function (qf::MLPQFunction)(obs::AbstractMatrix{Float32}, act::AbstractMatrix{Float32})
     q = qf.q(cat(obs, act; dims=1))
@@ -140,7 +140,7 @@ function (qf::MLPQFunction)(obs::AbstractMatrix{Float32}, act::AbstractMatrix{Fl
 end
 
 """
-Actor-critic object.
+Actor-critic agent.
 """
 mutable struct MLPActorCritic <: GlobalResult
     pi::SquashedGaussianMLPActor
@@ -163,7 +163,7 @@ function MLPActorCritic(
 end
 
 """
-Retrieves action from policy.
+Retrieve action from policy.
 """
 function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=false)
     a, _ = ac.pi(obs, deterministic, false)
@@ -171,11 +171,11 @@ function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=
 end
 
 """
-Defines native softplus function to avoid CUDA bugs. #TODO: removable?
+Define native softplus function to avoid CUDA bugs. #TODO: removable?
 """
 softplus(x::Real) = x > 0 ? x + log(1 + exp(-x)) : log(1 + exp(x))
 
 """
-Defines native relu function to avoid Flux bugs. #TODO: removable?
+Define native relu function to avoid Flux bugs. #TODO: removable?
 """
 relu(x::Real) = max(x, 0)

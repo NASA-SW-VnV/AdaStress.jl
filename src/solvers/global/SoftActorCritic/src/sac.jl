@@ -1,5 +1,5 @@
 """
-Computes loss for value function under current policy.
+Compute loss for value function under current policy.
 """
 function compute_loss_q(
 	ac::MLPActorCritic,
@@ -25,7 +25,7 @@ function compute_loss_q(
 end
 
 """
-Computes loss for current policy.
+Compute loss for current policy.
 """
 function compute_loss_pi(
     ac::MLPActorCritic,
@@ -44,7 +44,7 @@ function compute_loss_pi(
 end
 
 """
-Computes loss for current alpha.
+Compute loss for current alpha.
 """
 function compute_loss_alpha(ac::MLPActorCritic, data::NamedTuple, alpha::AbstractVector{Float32}, target_entropy::Float64)
     o = data.obs
@@ -54,7 +54,7 @@ function compute_loss_alpha(ac::MLPActorCritic, data::NamedTuple, alpha::Abstrac
 end
 
 """
-Updates policy with observations.
+Update policy with observations.
 """
 function update(
 	ac::MLPActorCritic,
@@ -109,7 +109,7 @@ function update(
 end
 
 """
-Tests current policy and generates display statistics.
+Test current policy and generate display statistics.
 TODO: Statistics can be gathered more efficiently from existing rollouts.
 """
 function test_agent(
@@ -162,7 +162,7 @@ function test_agent(
 end
 
 """
-Defines SAC solver
+Soft actor-critic algorithm.
 """
 Base.@kwdef mutable struct SAC <: GlobalSolver
     # Environment
@@ -212,9 +212,6 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
                                                     # zero or negative for unlimited
 end
 
-"""
-Solves MDP with soft actor critic method.
-"""
 function Solvers.solve(sac::SAC, env_fn::Function)
     # Initialize AC agent and auxiliary data structures
     env = env_fn()

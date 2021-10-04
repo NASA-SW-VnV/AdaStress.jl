@@ -1,6 +1,6 @@
 """
-Implements Monte Carlo tree search algorithm, which balances exploration and experience.
-Constructs partially-ordered search tree over actions.
+Monte Carlo tree search algorithm. Balances exploration and experience. Constructs
+partially-ordered search tree over actions, treating states as anonymous.
 """
 module MonteCarloTreeSearch
 

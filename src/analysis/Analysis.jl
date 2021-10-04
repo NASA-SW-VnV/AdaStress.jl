@@ -1,5 +1,5 @@
 """
-Provides analysis framework for solutions.
+Analysis framework. Provides utilities to analyze and visualize solver results.
 """
 module Analysis
 

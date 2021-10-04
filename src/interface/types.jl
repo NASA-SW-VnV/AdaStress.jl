@@ -6,22 +6,24 @@ abstract type AbstractSimulation end
 """
 Internal unimplemented exception type.
 """
-struct UnimplementedError <: Exception end
-Base.showerror(io::IO, ::UnimplementedError) = print(io, "Required function has not been implemented.")
+Base.@kwdef struct UnimplementedError <: Exception
+    msg::String = "Required function has not been implemented."
+end
+Base.showerror(io::IO, e::UnimplementedError) = print(io, e.msg)
 unimplemented() = throw(UnimplementedError())
 
 """
-Stores distributions of environment variables.
+Set of environment variables and their distributions.
 """
 const Environment = Dict{Symbol, Sampleable}
 
 """
-Stores values of environment samples.
+Samples from environment.
 """
 const EnvironmentValue = Dict{Symbol, Any}
 
 """
-Stores inferred properties of environment variable.
+Inferred properties of single environment variable.
 """
 struct VariableInfo
 	n::Int64	# environment variable dimensionality
@@ -29,7 +31,7 @@ struct VariableInfo
 end
 
 """
-Stores properties of environment variables.
+Properties of environment variables.
 """
 const EnvironmentInfo = Dict{Symbol, VariableInfo}
 
@@ -38,8 +40,14 @@ Abstract type for AST state.
 """
 abstract type State end
 
+"""
+State type for observable simulation.
+"""
 struct ObservableState <: State end
 
+"""
+State type for unobservable simulation.
+"""
 struct UnobservableState <: State end
 
 """
@@ -48,14 +56,14 @@ Abstract type for AST action.
 abstract type Action end
 
 """
-Action corresponding to instantiation of stochastic environment.
+Action type corresponding to instantiation of stochastic environment.
 """
 struct SampleAction <: Action
     sample::EnvironmentValue
 end
 
 """
-Action corresponding to setting random seed.
+Action type corresponding to setting random seed of simulation.
 """
 struct SeedAction <: Action
     seed::UInt32

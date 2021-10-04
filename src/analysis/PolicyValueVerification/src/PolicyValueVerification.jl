@@ -1,6 +1,6 @@
 """
-Analyzes AST results containing a policy and value function represented by
-ensembles of neural networks.
+Analyze AST results containing a policy and value function represented by ensembles of
+neural networks.
 """
 module PolicyValueVerification
 

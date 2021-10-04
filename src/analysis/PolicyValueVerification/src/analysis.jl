@@ -1,6 +1,8 @@
 
 """
-Counts number of leaves below cell.
+    num_leaves(cell::Cell)
+
+Count number of leaves below cell.
 """
 num_leaves(cell::Cell) = sum(1 for _ in allleaves(cell))
 
@@ -18,6 +20,8 @@ function proven_volume(cell::Cell, member::Bool=true)
 end
 
 """
+    coverage(cell::Cell, member::Union{Bool,Nothing}=nothing)
+
 Proportion of cell volume proven to satisfy condition, complement, or either.
 """
 function coverage(cell::Cell, member::Union{Bool,Nothing}=nothing)
@@ -26,6 +30,6 @@ function coverage(cell::Cell, member::Union{Bool,Nothing}=nothing)
     else
         vol = proven_volume(cell, member)
     end
-    
+
     return vol / prod(cell.boundary.widths)
 end

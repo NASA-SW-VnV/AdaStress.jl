@@ -1,7 +1,7 @@
 """
-Distance heuristic abstract type.
-Custom heuristics can inherit this type and implement `reset!` and `apply!` functions.
-Application can return value or partially-applied function transforming f(s,s') to f(s)(s').
+Distance heuristic abstract type. Custom heuristics inherit this type and implement `reset!`
+and `apply!` functions. Application can return scalar value or partially-applied function
+transforming f(s,s') to f(s)(s').
 """
 abstract type AbstractDistanceHeuristic end
 reset!(::AbstractDistanceHeuristic) = nothing
