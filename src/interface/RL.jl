@@ -4,6 +4,7 @@ Reset MDP.
 function reset!(mdp::ASTMDP)
     reset!(mdp.sim)
     reset!(mdp.reward.heuristic)
+    return nothing
 end
 
 """

@@ -26,6 +26,7 @@ Base.@kwdef mutable struct ASTServer
     token::Union{Token, Nothing}            = nothing
     tunnel::Bool                            = false
     verbose::Bool                           = false
+    presample::Bool                         = true
 end
 
 """
@@ -68,27 +69,47 @@ function set_password(server::ASTServer)
 end
 
 """
-Respond to ping from ASTClient.
+Respond to echo request from ASTClient.
 """
-ping(::ASTServer) = Dict(:r => 0x0)
+_echo(::ASTMDP, x) = x
+
+"""
+Respond to information request from ASTClient.
+"""
+function _info(mdp::ASTMDP{S, A}) where {S, A}
+    Dict(
+        :S => Symbol("$S"),
+        :A => Symbol("$A"),
+        :episodic => mdp.episodic,
+        :num_steps => mdp.num_steps
+    )
+end
 
 """
 Process simulation request from client and construct response.
 """
 function respond(server::ASTServer, request::Dict)
-    # Interpret request.
+    # interpret request
     sym = FMAP[request[:f]]
     f = getproperty(Interface, sym)
     args = request[:a]
+    kwargs = request[:k]
 
-    # Process response.
+    # reseeding
     if server.token !== nothing && sym == :act! && action_type(server.mdp) == SeedAction
         seed = reseed(args[1], server.token)
         args = (seed,)
     end
-    r = f(server.mdp, args...)
-    if sym == :actions && action_type(server.mdp) == SampleAction
-        r = Dirac(rand(r)) # perform rand server-side
+
+    if haskey(kwargs, :batch) && kwargs.batch
+        r = sum(f.(Ref(server.mdp), args...)) # batch processing
+    else
+        r = f(server.mdp, args...)
+    end
+
+    # server-side sampling
+    if server.presample && sym == :actions && action_type(server.mdp) == SampleAction
+        r = Dirac(rand(r; flat=true))
     end
 
     return Dict(:r => r)
@@ -100,14 +121,18 @@ connections asynchronously, but server currently holds a single MDP instance.
 """
 function run(server::ASTServer)
     @async while true
-        # Listen for incoming connections.
+        # listen for incoming connections
         conn = accept(server.serv)
         @info "Connected to AST client." conn
         @async while true
-            # Interpret request.
             request = BSON.load(conn)
             server.verbose && @info "Received request from client:" request
-            response = request[:f] == 0x0 ? ping(server) : respond(server, request)
+            response = try
+                respond(server, request)
+            catch e
+                bson(conn, Dict(:e => true))
+                throw(e)
+            end
             bson(conn, response)
             server.verbose && @info "Sent response to client." response
         end
