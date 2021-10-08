@@ -1,6 +1,6 @@
 
 """
-Contains cell information pertaining to proof and multiprocessing status.
+Cell information pertaining to proof and processing status.
 """
 Base.@kwdef mutable struct CellStatus
     depth::Int64 = 0
@@ -11,7 +11,9 @@ Base.@kwdef mutable struct CellStatus
 end
 
 """
-Defines parameters of binary refinement process.
+    BinaryRefinery <: AbstractRefinery
+
+Binary refinement process.
 """
 Base.@kwdef struct BinaryRefinery <: AbstractRefinery
     network::Network
@@ -24,7 +26,9 @@ Base.@kwdef struct BinaryRefinery <: AbstractRefinery
 end
 
 """
-Defines parameters of interval refinement process.
+    IntervalRefinery <: AbstractRefinery
+
+Interval refinement process.
 """
 Base.@kwdef struct IntervalRefinery <: AbstractRefinery
     network::Network
@@ -36,7 +40,7 @@ Base.@kwdef struct IntervalRefinery <: AbstractRefinery
 end
 
 """
-Determines whether condition can be proven true or false over entire cell
+Determine whether condition can be proven true or false over entire cell
 or if further refinement is needed.
 """
 function needs_refinement(cell::Cell, r::AbstractRefinery)
@@ -77,15 +81,17 @@ function needs_refinement(cell::Cell, r::AbstractRefinery)
 end
 
 """
-Generates data for newly-created cell.
+Generate data for newly-created cell.
 """
 function child_data(c::Cell, idx::Tuple)
     return CellStatus(depth = c.data.depth + 1, hash = hash((c.data.hash, idx)))
 end
 
 """
-Recursively builds miniminal k-d tree that defines volumes proven to satisfy
-given condition and its complement. This version is single-process.
+    refine!(cell::Cell, r::AbstractRefinery)
+
+Recursively build miniminal k-d tree that defines volumes proven to satisfy given condition
+and its complement. This version is single-process.
 """
 function refine!(cell::Cell, r::AbstractRefinery)
     if needs_refinement(cell, r)
@@ -99,9 +105,9 @@ function refine!(cell::Cell, r::AbstractRefinery)
 end
 
 """
-Merges children of cell if all are proven and belong to the same set, or if
-all are unproven and attached (not awaiting computation by another process).
-If recursive = true, all descendents are merged.
+Merge children of cell if all are proven and belong to the same set, or if all are unproven
+and attached (not awaiting computation by another process). If `recursive`, all descendents
+are merged.
 """
 function merge!(cell::Cell; recursive::Bool=false)
     if !isleaf(cell)
@@ -119,8 +125,8 @@ function merge!(cell::Cell; recursive::Bool=false)
 end
 
 """
-Verify that tree is well-formed after recombination; i.e., no cells
-are marked as detached and all children recognize the correct parent.
+Verify that tree is well-formed after recombination; i.e., no cells are marked as detached
+and all children recognize the correct parent.
 """
 function verify(cell::Cell)
     for c in allcells(cell)
@@ -137,7 +143,7 @@ function verify(cell::Cell)
 end
 
 """
-Generates root from region limits.
+Generate root from region limits.
 """
 function get_root(limits::NTuple{2, Vector{Float64}})
     lows, highs = limits

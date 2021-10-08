@@ -1,5 +1,5 @@
 """
-Samples environment, returning EnvironmentValue or array (default).
+Sample environment, returning `EnvironmentValue` (default) or array.
 """
 function Base.rand(env::Environment; flat::Bool=false)
 	value = EnvironmentValue(k => rand(dist) for (k, dist) in env)
@@ -7,29 +7,29 @@ function Base.rand(env::Environment; flat::Bool=false)
 end
 
 """
-Infers dimension of action space.
+Infer dimension of action space.
 """
 act_dim(mdp::ASTMDP{<:State, SampleAction}) = sum(info.n for info in values(mdp.env_info))
 
 """
-Infers dimension of state space.
+Infer dimension of state space.
 """
 obs_dim(mdp::ASTMDP{ObservableState, <:Action}) = length(observe(mdp.sim))
 
 """
-Returns ordered list dictionary keys.
+Return ordered list dictionary keys.
 """
 orderedkeys(dict::Dict) = sort!(collect(keys(dict)))
 
 """
-Flattens EnvironmentValue into single array.
+Flatten `EnvironmentValue` into array.
 """
 function flatten(env::Environment, value::EnvironmentValue)
 	return reduce(append!, flatten(env[k], value[k]) for k in orderedkeys(env))
 end
 
 """
-Reconstructs EnvironmentValue from single array.
+Reconstruct `EnvironmentValue` from array.
 """
 function unflatten(mdp::ASTMDP{<:State, SampleAction}, action::AbstractVector{<:Real})
 	value = EnvironmentValue()
@@ -46,7 +46,7 @@ function unflatten(mdp::ASTMDP{<:State, SampleAction}, action::AbstractVector{<:
 end
 
 """
-Calculates log probability of sample from environment variable.
+Calculate log probability of sample from environment variable.
 """
 function logprob(distribution::Any, value::Any, marginalize::Bool)
     logp = logpdf(distribution, value)
@@ -57,14 +57,14 @@ function logprob(distribution::Any, value::Any, marginalize::Bool)
 end
 
 """
-Calculates total log probability of environment value.
+Calculate total log probability of environment value.
 """
 function logprob(env::Environment, value::EnvironmentValue, marginalize::Bool)
     return sum(logprob(env[k], value[k], marginalize) for k in keys(env))
 end
 
 """
-Infers information about simulation environment.
+Infer information about simulation environment.
 """
 function infer_info(env::Environment)
     env_info = EnvironmentInfo()
@@ -77,7 +77,7 @@ function infer_info(env::Environment)
 end
 
 """
-Infers type of state.
+Infer type of state.
 """
 function infer_state(sim::AbstractSimulation)
     try
@@ -88,6 +88,8 @@ function infer_state(sim::AbstractSimulation)
 end
 
 """
+    ASTMDP(sim::AbstractSimulation; kwargs...)
+
 Constructor for ASTMDP object. Infers various properties of MDP.
 """
 function ASTMDP(sim::AbstractSimulation; kwargs...)
@@ -100,6 +102,9 @@ function ASTMDP(sim::AbstractSimulation; kwargs...)
     return mdp
 end
 
+"""
+Wrap action for internal handling.
+"""
 convert_a(mdp::ASTMDP{<:State, SampleAction}, action::AbstractVector{<:Real}) = SampleAction(unflatten(mdp, action))
 convert_a(::ASTMDP{<:State, SampleAction}, action::EnvironmentValue) = SampleAction(action)
 convert_a(::ASTMDP{<:State, SeedAction}, action::UInt32) = SeedAction(action)

@@ -1,6 +1,6 @@
 """
-Implements simple uninformed Monte Carlo search. Should be used as a baseline for other
-local solvers, in terms of runtime performance and overall efficacy.
+Simple uninformed Monte Carlo search. Should be used as a baseline for other local solvers,
+in terms of runtime performance and overall efficacy.
 """
 module MonteCarloSearch
 
@@ -15,6 +15,11 @@ using CommonRLInterface
 using DataStructures: PriorityQueue, enqueue!
 using ProgressMeter
 
+"""
+    MCS <: LocalSolver
+
+Monte Carlo search solver.
+"""
 Base.@kwdef mutable struct MCS <: LocalSolver
     num_iterations::Int64 = 1000
     top_k::Int64          = 10

@@ -1,5 +1,5 @@
 """
-Provides solvers for AST MDPs.
+Solvers module. Provides algorithms for solving AST MDPs.
 """
 module Solvers
 

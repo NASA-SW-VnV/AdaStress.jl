@@ -1,6 +1,6 @@
 """
 AST core objective function abstract type. Defines fundamental reward function by combining
-only log probability, event bonus, and distance heuristic. Additional contributions to the
+log probability, event bonus, and distance heuristic. Additional contributions to the
 reward should be added by implementing `reward` function in GrayBox or BlackBox interface.
 """
 abstract type AbstractCoreObjective end
@@ -39,7 +39,7 @@ Base.@kwdef mutable struct Reward <: AbstractReward
 end
 
 """
-Custom reward prcoessing from user.
+Internal handling of custom reward.
 """
 custom_reward(sim::GrayBox, a::SampleAction) = Functoid(reward(sim, a.sample))
 custom_reward(sim::BlackBox, ::SeedAction) = Functoid(reward(sim))

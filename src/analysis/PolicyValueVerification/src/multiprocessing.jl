@@ -1,8 +1,8 @@
 
 """
-Recursively builds miniminal k-d tree that defines volumes proven to satisfy
-given condition and its complement. At specificed depth levels, places children onto
-jobs queue instead of refining, to create an even task distribution over processes.
+Recursively build miniminal k-d tree that defines volumes proven to satisfy given condition
+or its complement. At specificed depth levels, places children onto jobs queue instead of
+refining, to maintain an even work distribution across processes.
 """
 function refine!(cell::Cell, r::AbstractRefinery, jobs::RemoteChannel)
     if needs_refinement(cell, r)
@@ -29,12 +29,11 @@ function refine!(cell::Cell, r::AbstractRefinery, jobs::RemoteChannel)
 end
 
 """
-Takes a cell from the jobs queue, refines it (possibly spawning more jobs in
-the process), and places it onto the results queue. Result may not be a
-well-formed tree; the worker does not wait on detached children. The forest is
-stitched together by the main process after all workers have completed.
-Each worker indicates its idle status by setting an index in a shared array,
-and breaks upon receiving a cell with a 0x0 hash.
+Take a cell from the jobs queue, refine it (possibly spawning more jobs in the process), and
+place it onto the results queue. Result may not be a well-formed tree; the worker does not
+wait on detached children. The forest is stitched together by the main process after all
+workers have completed. Each worker indicates its idle status by setting an index in a
+shared array, and breaks upon receiving a termination signal (a cell with a 0x0 hash).
 """
 function work(jobs::RemoteChannel, results::RemoteChannel, idle::SharedArray, r::AbstractRefinery)
     while true
@@ -49,8 +48,8 @@ function work(jobs::RemoteChannel, results::RemoteChannel, idle::SharedArray, r:
 end
 
 """
-Recursively reassembles forest, merging a cell with a dictionary of subtrees
-ordered by cell hash.
+Recursively reassemble forest, merging a cell with a dictionary of subtrees ordered by cell
+hash.
 """
 function merge!(cell::Cell, subtrees::Dict{UInt64, <:Cell})
     isleaf(cell) && return nothing
@@ -72,7 +71,7 @@ function merge!(cell::Cell, subtrees::Dict{UInt64, <:Cell})
 end
 
 """
-Empties results channel, performs merge, and verifies correctness.
+Empty results channel, perform merge, and verify correctness.
 """
 function merge!(root::Cell, results::RemoteChannel)
     # Collects subtrees.
@@ -97,7 +96,7 @@ function merge!(root::Cell, results::RemoteChannel)
 end
 
 """
-Terminates idle worker processes.
+Terminate idle worker processes.
 """
 function terminate(jobs::RemoteChannel)
     signal = Cell(SVector(0.0), SVector(0.0), CellStatus(hash=0x0))
@@ -107,9 +106,11 @@ function terminate(jobs::RemoteChannel)
 end
 
 """
-Runs multiprocess refinement.
+    refine_multiprocess!(root::Cell, r::AbstractRefinery)
+
+Run multiprocess refinement.
 """
-function refine_multiprocess!(root, r)
+function refine_multiprocess!(root::Cell, r::AbstractRefinery)
     # Remotely execute work task.
     put!(jobs, root)
 	idle = SharedArray{Bool,1}((nprocs(),))

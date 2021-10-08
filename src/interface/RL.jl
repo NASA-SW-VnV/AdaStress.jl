@@ -1,5 +1,5 @@
 """
-Resets MDP.
+Reset MDP.
 """
 function reset!(mdp::ASTMDP)
     reset!(mdp.sim)
@@ -7,18 +7,18 @@ function reset!(mdp::ASTMDP)
 end
 
 """
-Returns set of available actions as sampleable object.
+Return set of available actions as sampleable object.
 """
 actions(mdp::ASTMDP{<:State, SampleAction}) = environment(mdp.sim)
 actions(::ASTMDP{<:State, SeedAction}) = UInt32
 
 """
-Returns observation of environment.
+Return observation of environment.
 """
 observe(mdp::ASTMDP{ObservableState, <:Action}) = Float32.(observe(mdp.sim))
 
 """
-Steps simulation and returns log probability of action.
+Step simulation and return log probability of transition.
 """
 function evaluate!(mdp::ASTMDP{<:State, A}, a::A) where A <: SampleAction
     env = environment(mdp.sim)
@@ -37,12 +37,12 @@ function evaluate!(mdp::ASTMDP{<:State, A}, a::A) where A <: SeedAction
 end
 
 """
-Applies raw action to environment and returns reward.
+Apply raw action to environment and return reward.
 """
 act!(mdp::ASTMDP{<:State, <:Action}, action) = act!(mdp, convert_a(mdp, action))
 
 """
-Applies converted action to environment and returns reward.
+Apply converted action to environment and return reward.
 """
 function act!(mdp::ASTMDP{<:State, A}, a::A) where A <: Action
     # rewards (partial application)
@@ -59,11 +59,11 @@ function act!(mdp::ASTMDP{<:State, A}, a::A) where A <: Action
 end
 
 """
-Returns Boolean indicating termination status.
+Return Boolean indicating termination status.
 """
 terminated(mdp::ASTMDP) = isterminal(mdp.sim) || !mdp.episodic && isevent(mdp.sim)
 
-# Connects AdaStress interface to CommonRLInterface
+# Connection between AdaStress internal functions and CommonRLInterface
 
 CommonRLInterface.reset!(mdp::AbstractASTMDP) = reset!(mdp)
 
