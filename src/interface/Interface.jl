@@ -12,39 +12,12 @@ using Random
 using Sockets
 import Base: rand
 
-export
-    ASTMDP,
-    BlackBox,
-    GrayBox,
-    Environment,
-    EnvironmentValue,
-    ObservableState,
-    UnobservableState,
-    SampleAction,
-    SeedAction,
-    ASTClient,
-    ASTServer,
-
-    reset!,
-    environment,
-    observe,
-    step!,
-    isterminal,
-    isevent,
-    distance,
-    flatten,
-    unflatten,
-    connect!,
-    disconnect!,
-    ping,
-    @fix,
-
-    DistanceGradient,
-    DistanceMinimum,
-    DistanceNull,
-
-    WeightedReward,
-    VectorReward
+export ASTMDP, BlackBox, GrayBox, Environment, EnviornmentValue
+export VariableInfo, ObservableState, UnobservableState, SampleAction, SeedAction
+export reset!, environment, observe, step!, isterminal, isevent, distance, flatten, unflatten
+export Reward, WeightedObjective, VectorObjective
+export GradientHeuristic, MinimumHeuristic, FinalHeuristic, NullHeuristic
+export ASTClient, ASTServer, RemoteASTMDP, connect!, disconnect!, ping
 
 include("types.jl")
 include("utils.jl")

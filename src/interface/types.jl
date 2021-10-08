@@ -97,6 +97,7 @@ Base.@kwdef mutable struct ASTMDP{S<:State, A<:Action} <: AbstractASTMDP{S, A}
 	sim::AbstractSimulation						      # simulation wrapping system under test
     reward::AbstractReward    = Reward()              # reward structure
     episodic::Bool            = false                 # episodic evaluation
+    num_steps::Int64          = 0                     # number of steps (zero if unknown)
 	env_info::EnvironmentInfo = EnvironmentInfo()	  # inferred environment properties
     rng::AbstractRNG          = Random.default_rng()  # RNG used for simulation
 end
