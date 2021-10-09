@@ -1,6 +1,6 @@
 
 """
-Converts DateTime to valid cross-platform filename.
+Convert DateTime to valid cross-platform filename.
 """
 function dt_to_fn(dt::DateTime)
     dt = round(dt, Dates.Second)
@@ -9,7 +9,7 @@ function dt_to_fn(dt::DateTime)
 end
 
 """
-Converts filename to corresponding unix time (or NaN)
+Convert filename to corresponding unix time (or NaN)
 """
 function fn_to_t(fn::String)
     str = replace(fn, r"saved_(.*T)(.*)-(.*)-(.*).bson" => s"\1\2:\3:\4")
@@ -17,7 +17,7 @@ function fn_to_t(fn::String)
 end
 
 """
-Saves AC networks to specified directory, with optional maximum number of saves.
+Save AC networks to specified directory, with optional maximum number of saves.
 """
 function checkpoint(ac::MLPActorCritic, save_dir::String, max_saved::Int)
 
@@ -37,7 +37,7 @@ function checkpoint(ac::MLPActorCritic, save_dir::String, max_saved::Int)
 end
 
 """
-Generates values to display and save from display tuples
+Generate values to display/save from display tuples.
 """
 function gen_showvalues(epoch::Int64, disp_tups::Vector{<:Tuple})
     () -> [(:epoch, epoch), ((sym, isempty(hist) ? NaN : hist[end]) for (sym, hist) in disp_tups)...]
@@ -60,7 +60,7 @@ function update!(disp_tups::Vector{<:Tuple}, disp_vals::Vector{<:Real})
 end
 
 """
-Recursively transfers structure to CPU in-place.
+Recursively transfer structure to CPU in-place.
 """
 function to_cpu!(x::Any, level::Int64=2)
 	level < 1 && return
@@ -74,7 +74,7 @@ function to_cpu!(x::Any, level::Int64=2)
 end
 
 """
-Recursively transfers copy of structure to CPU.
+Recursively transfer copy of structure to CPU.
 """
 function to_cpu(x::Any, args...)
     y = deepcopy(x)

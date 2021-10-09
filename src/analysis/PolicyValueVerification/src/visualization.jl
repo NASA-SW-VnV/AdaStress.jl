@@ -1,11 +1,11 @@
 
 """
-Converts cell to Shape type.
+Convert cell to `Shape` type.
 """
 shape(cell::Cell) = Shape(Tuple.(collect(vertices(cell).data))[[1,2,4,3]])
 
 """
-Returns x- and y-coordinates of cell vertices.
+Return x- and y-coordinates of cell vertices.
 """
 function vs(cell::Cell)
     v = hcat(collect(vertices(cell))...)
@@ -15,7 +15,9 @@ function vs(cell::Cell)
 end
 
 """
-Visualizes edges and/or shapes of cells.
+    visualize!([p], root::Cell; fill::Bool=false, tol::Float64=0.01)
+
+Visualize edges and/or shapes of cells. Optional first argument is a pre-existing plot.
 """
 function visualize!(p, root::Cell; fill::Bool=false, tol::Float64=0.01)
     # plot parameters
@@ -46,7 +48,9 @@ end
 visualize(root::Cell; kwargs...) = visualize!(plot(), root; kwargs...)
 
 """
-Visualizes network cross-section.
+    visualize(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
+
+Visualize network cross-section.
 """
 function visualize(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
     return visualize(network, linearize(cs), limits)

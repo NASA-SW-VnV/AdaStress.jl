@@ -1,7 +1,7 @@
 
 """
-Optional private token for extra security.
-Forces seed rehashing to remove client-side interpretability.
+Optional private token for additional security. Use of token prompts seed rehashing to
+obstruct client-side interpretability.
 """
 struct Token
     data::Any
@@ -9,11 +9,13 @@ end
 Base.show(io::IO, ::Token) = print(io, "Token()")
 
 """
-Salts random seed with private token for extra security.
+Salt random seed with private token for additional security.
 """
 reseed(seed::UInt32, token::Token) = UInt32(hash((seed, token.data)) % typemax(UInt32))
 
 """
+    ASTServer
+
 Simulation-side server. Interacts with client via TCP.
 """
 Base.@kwdef mutable struct ASTServer
@@ -27,6 +29,8 @@ Base.@kwdef mutable struct ASTServer
 end
 
 """
+    ASTServer(mdp::ASTMDP; kwargs...)
+
 Constructor for server.
 """
 function ASTServer(mdp::ASTMDP; kwargs...)
@@ -34,7 +38,10 @@ function ASTServer(mdp::ASTMDP; kwargs...)
 end
 
 """
-Sets private token.
+    set_token(server::ASTServer, token)
+
+Set private token to encrypt seeds. Recommended to use `set_password` instead, to avoid
+leaking token through side effects.
 """
 function set_token(server::ASTServer, token)
     if action_type(server.mdp) == SeedAction
@@ -47,8 +54,10 @@ function set_token(server::ASTServer, token)
 end
 
 """
-Sets private token to string input (password).
-Avoids explicit representation of password in storage or side effects.
+    set_password(server::ASTServer)
+
+Set private token to string input (password). Avoids explicit representation of password in
+storage or side effects.
 """
 function set_password(server::ASTServer)
     io = Base.getpass("Enter password")
@@ -59,12 +68,12 @@ function set_password(server::ASTServer)
 end
 
 """
-Responds to ping from ASTClient.
+Respond to ping from ASTClient.
 """
 ping(::ASTServer) = Dict(:r => 0x0)
 
 """
-Processes simulation request from client and constructs response.
+Process simulation request from client and construct response.
 """
 function respond(server::ASTServer, request::Dict)
     # Interpret request.
@@ -86,8 +95,8 @@ function respond(server::ASTServer, request::Dict)
 end
 
 """
-Listens for incoming requests and executes function calls on MDP.
-Can handle multiple client connections asynchronously.
+Listen for incoming requests and execute function calls on MDP. Can handle multiple client
+connections asynchronously, but server currently holds a single MDP instance.
 """
 function run(server::ASTServer)
     @async while true
@@ -106,8 +115,10 @@ function run(server::ASTServer)
 end
 
 """
-Connects server, optionally through SSH tunnel.
-Optional argument `remote` should be of the form `user@machine`.
+    connect!(server::ASTServer; remote::String="", remote_port::Int64=1812)
+
+Connect server, optionally through SSH tunnel. Optional keyword argument `remote` should be
+of the form `user@machine`.
 """
 function connect!(server::ASTServer; remote::String="", remote_port::Int64=1812)
     disconnect!(server)
@@ -118,7 +129,9 @@ function connect!(server::ASTServer; remote::String="", remote_port::Int64=1812)
 end
 
 """
-Disconnects server.
+    disconnect!(server::ASTServer)
+
+Disconnect server.
 """
 function disconnect!(server::ASTServer)
     if server.serv !== nothing

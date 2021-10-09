@@ -1,5 +1,5 @@
 """
-Implements the soft actor-critic algorithm with certain modifications enabling post-analysis.
+Soft actor-critic algorithm with modifications enabling post-analysis.
 """
 module SoftActorCritic
 

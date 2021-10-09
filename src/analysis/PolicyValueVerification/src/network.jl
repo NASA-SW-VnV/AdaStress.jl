@@ -10,8 +10,8 @@ Base.@kwdef mutable struct ExtendedNetwork
 end
 
 """
-Translates regular Julia activation functions to nnet functions.
-Limited to identity and relu. Attempts to infer anonymous functions.
+Translate regular Flux activation functions to nnet functions. Limited to `identity` and
+`relu`. Attempts to infer anonymous functions if encountered.
 """
 function func_translate(f::Function)
     fsym = Symbol(f)
@@ -36,7 +36,7 @@ function func_translate(f::Function)
 end
 
 """
-Pads front of matrix with zeros.
+Pad front of matrix with zeros.
 """
 function fpad(M::Matrix{<:Real}, dims::Tuple{Int64,Int64})
     i, j = size(M)
@@ -47,7 +47,7 @@ function fpad(M::Matrix{<:Real}, dims::Tuple{Int64,Int64})
 end
 
 """
-Pads front of vector with zeros.
+Pad front of vector with zeros.
 """
 function fpad(v::Vector{<:Real}, sz::Int64)
     t = eltype(v)
@@ -56,7 +56,7 @@ function fpad(v::Vector{<:Real}, sz::Int64)
 end
 
 """
-Pads front of matrix with identity.
+Pad front of matrix with identity.
 """
 function fpad_id(M::Matrix{<:Real}, sz::Int64)
     Mp = fpad(M, (sz, sz))
@@ -66,7 +66,7 @@ function fpad_id(M::Matrix{<:Real}, sz::Int64)
 end
 
 """
-Pads front of Flux.Dense layer and converts to nnet layer.
+Pad front of Flux.Dense layer and convert to nnet layer.
 """
 function fpad(l::Dense, sz::Int64)
     W = fpad_id(l.weight, sz)
@@ -76,7 +76,7 @@ function fpad(l::Dense, sz::Int64)
 end
 
 """
-Constructs block diagonal matrix from matrix arguments.
+Construct block diagonal matrix from matrix arguments.
 """
 function block_diag(matrices...)
     m = sum((M -> size(M, 1)).(matrices))
@@ -94,8 +94,8 @@ function block_diag(matrices...)
 end
 
 """
-Converts policy from actor-critic object to neural network.
-Represents concatenation and squashing with configurations of ReLUs.
+Convert policy from actor-critic object to neural network. Concatenation and squashing are
+represented by ReLU configurations.
 """
 function policy_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
     # Dimensions and parameters
@@ -137,7 +137,7 @@ function policy_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
 end
 
 """
-Converts actor-critic object to extended neural network representing ensemble of values.
+Convert actor-critic object to extended neural network representing ensemble of values.
 """
 function values_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
     # Compute policy network
@@ -163,7 +163,7 @@ function values_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
 end
 
 """
-Converts actor-critic object to extended neural network representing mean of ensemble.
+Convert actor-critic object to extended neural network representing mean of ensemble.
 """
 function mean_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64}, s::Float64=0.0)
     network = values_network(ac; act_mins=act_mins, act_maxs=act_maxs)
@@ -201,7 +201,7 @@ function mean_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vec
 end
 
 """
-Converts actor-critic object to extended neural network representing spread of ensemble
+Convert actor-critic object to extended neural network representing spread of ensemble
 (mean absolute deviation).
 """
 function spread_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vector{Float64})
@@ -239,16 +239,27 @@ function spread_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
 end
 
 """
-Cross-section type.
-Defines simple mapping from reduced input space (:x1, :x2, ...) to network observation space.
-	Example: cs = CrossSection([:x1, -pi/2, :x2, pi/2, :x2])
+    CrossSection
+
+Cross-section type defining simple mapping from reduced input space (:x1, :x2, ...) to
+network observation space.
+
+# Example
+```
+CrossSection([:x1, -pi/2, :x2, pi/2, :x2])
+```
 """
 CrossSection = Vector{Union{<:Real, Symbol}}
 
 """
-Linear cross-section type.
-Defines more general mapping.
-	Example: W = [1 -1; 0 1; 0 0]; b = [0, 0, 5];
+    LinearCrossSection
+
+Linear cross-section type, defining more general mapping.
+
+# Example
+```
+LinearCrossSection([1 -1; 0 1; 0 0], [0, 0, 5])
+```
 """
 mutable struct LinearCrossSection
     W::Matrix{<:Real}
@@ -256,7 +267,7 @@ mutable struct LinearCrossSection
 end
 
 """
-Parses variables and creates cross-section linear mapping.
+Parse variables and create cross-section linear mapping.
 """
 function linearize(cs::CrossSection)
     vars = sort(unique(filter(el -> el isa Symbol, cs)))
@@ -266,7 +277,9 @@ function linearize(cs::CrossSection)
 end
 
 """
-Produces cross-section of neural network to reduce input dimensionality.
+    cross_section(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
+
+Produce cross-section of neural network to reduce input dimensionality.
 """
 function cross_section(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
     return cross_section(network, linearize(cs), limits)

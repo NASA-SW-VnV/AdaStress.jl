@@ -1,5 +1,7 @@
 """
-Monte Carlo tree search object.
+    MCTS <: LocalSolver
+
+Monte Carlo tree search algorithm.
 """
 Base.@kwdef mutable struct MCTS <: LocalSolver
     num_iterations::Int64      = 1000
@@ -11,7 +13,7 @@ Base.@kwdef mutable struct MCTS <: LocalSolver
 end
 
 """
-Rolls out random policy from given state, returning total return and final state.
+Roll out random policy from given state, returning total return and final state.
 """
 function rollout(mdp::CommonRLInterface.AbstractEnv, s::Node)
     d = terminated(mdp)
@@ -25,7 +27,7 @@ function rollout(mdp::CommonRLInterface.AbstractEnv, s::Node)
 end
 
 """
-Performs one full simulation of MCTS.
+Perform one full simulation of MCTS.
 """
 function simulate(mcts::MCTS, mdp::CommonRLInterface.AbstractEnv, s::Node=mcts.tree)
     s.n += 1
@@ -57,9 +59,6 @@ function simulate(mcts::MCTS, mdp::CommonRLInterface.AbstractEnv, s::Node=mcts.t
     return q, sf
 end
 
-"""
-Solve environment with MCTS.
-"""
 function Solvers.solve(mcts::MCTS, env_fn::Function)
     mdp = env_fn()
     A = typeof(rand(actions(mdp)))

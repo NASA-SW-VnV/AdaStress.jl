@@ -1,7 +1,5 @@
-"""
-Temporary storage for any RNG of the same type as the global RNG.
-"""
-RNG_TEMP = deepcopy(Random.default_rng())
+
+RNG_TEMP = deepcopy(Random.default_rng()) # temporary storage for RNG of same type as global
 
 """
 Conditional function. Applies function if applicable, otherwise returns value. Useful for

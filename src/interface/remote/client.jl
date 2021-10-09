@@ -4,6 +4,8 @@ FLAGS = [:reset!, :actions, :observe, :act!, :terminated]
 FMAP = Bijection(Dict(UInt8(i) => f for (i, f) in enumerate(FLAGS))) # maps flags <-> bytes
 
 """
+    ASTClient{S, A} <: AbstractASTMDP{S, A}
+
 Solver-side client. Interacts with server via TCP.
 """
 Base.@kwdef mutable struct ASTClient{S<:State, A<:Action} <: AbstractASTMDP{S, A}
@@ -15,8 +17,8 @@ Base.@kwdef mutable struct ASTClient{S<:State, A<:Action} <: AbstractASTMDP{S, A
 end
 
 """
-Performs virtual function call on remote MDP. Sends request to server with
-provided function and arguments and receives return value. Blocks until complete.
+Perform function call on remote MDP. Call sends request to server with provided function
+and arguments and receives return value. Blocks until complete.
 """
 function call(client::ASTClient, f::Function, args...)
     flag = Symbol(f)
@@ -39,7 +41,9 @@ act!(client::ASTClient, action) = call(client, act!, action)
 terminated(client::ASTClient) = call(client, terminated)
 
 """
-Requests ping from ASTServer. Returns round-trip time in seconds.
+    ping(client::ASTClient)
+
+Request ping from connected ASTServer, returning round-trip time in seconds.
 """
 function ping(client::ASTClient)
     request = Dict(:f => 0x0)
@@ -50,8 +54,10 @@ function ping(client::ASTClient)
 end
 
 """
-Connects client to server, optionally through SSH tunnel.
-Optional argument `remote` should be of the form `user@machine`.
+    connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
+
+Connect client to server, optionally through SSH tunnel. Optional keyword argument `remote`
+should be of the form `user@machine`.
 """
 function connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
     disconnect!(client)
@@ -63,7 +69,9 @@ function connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
 end
 
 """
-Disconnects client from server.
+    disconnect!(client::ASTClient)
+
+Disconnect client from server.
 """
 function disconnect!(client::ASTClient)
     if client.conn !== nothing

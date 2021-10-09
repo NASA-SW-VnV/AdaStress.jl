@@ -1,5 +1,5 @@
 """
-Replay buffer object
+Replay buffer.
 """
 mutable struct ReplayBuffer
     obs_buf::Matrix{Float32}        # stores observations
@@ -24,7 +24,7 @@ function ReplayBuffer(obs_dim::Int, act_dim::Int, max_size::Int)
 end
 
 """
-Stores data from one step of simulation.
+Store data from one step of simulation.
 """
 function store!(
     buf::ReplayBuffer,
@@ -45,7 +45,7 @@ function store!(
 end
 
 """
-Randomly samples from replay buffer.
+Randomly sample from replay buffer.
 """
 function sample_batch(buf::ReplayBuffer, batch_size::Int=32)
     idxs = rand(1:buf.size, batch_size)
@@ -60,7 +60,7 @@ function sample_batch(buf::ReplayBuffer, batch_size::Int=32)
 end
 
 """
-Lazily clears replay buffer.
+Lazily clear replay buffer.
 """
 function clear!(buf::ReplayBuffer)
     buf.ptr = 1

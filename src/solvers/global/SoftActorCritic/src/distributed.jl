@@ -1,5 +1,5 @@
 """
-Sent from master process to worker processes. Stores new policy to be rolled out.
+Job description sent to worker processes. Stores new policy to be rolled out.
 """
 struct Master2Worker
     ac::MLPActorCritic      # policy
@@ -8,7 +8,7 @@ struct Master2Worker
 end
 
 """
-Sent from worker processes to master process. Stores data from rollouts.
+Result sent from worker processes to master process. Stores data from rollouts.
 """
 struct Worker2Master
     id::Int                                     # worker ID
@@ -16,7 +16,7 @@ struct Worker2Master
 end
 
 """
-Worker-side code. Runs in loop, receiving policies and sending observed data.
+Worker-side task. Runs in loop, receiving policies and sending observed data.
 """
 function simulation_task(jobs::RemoteChannel, results::RemoteChannel, env_fn::Function, max_ep_len::Int)
 
@@ -67,7 +67,7 @@ function simulation_task(jobs::RemoteChannel, results::RemoteChannel, env_fn::Fu
 end
 
 """
-Master-size code. Delegates work and performs updates.
+Master-side code. Delegates work and performs updates.
 """
 function distributed_solve(sac::SAC, env_fn::Function; channel_size::Int=32)
     # Create remote channels

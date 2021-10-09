@@ -1,5 +1,5 @@
 #=
-Contains implementation of submodule manager. Submodules are optional modules with heavy
+Implementation of submodule manager. Submodules are optional modules with heavy
 dependencies. See documentation for usage and implementation details.
 =#
 
@@ -15,24 +15,30 @@ const PKG_PATH = dirname(dirname(pathof(@__MODULE__)))      # top-level package 
 const SUBMODULES = Dict{String, String}()                   # submodule table
 
 """
-Associates package directory to main package via submodule table instead of code loading.
-Equivalent of `include` for submodules / optional dependencies.
+    exclude(dir::String)
+
+Associate package directory to main package via submodule table instead of direct code
+loading. Equivalent of `include` for submodules / optional dependencies.
 """
-function exclude(file::String)
+function exclude(dir::String)
     fprev = stacktrace()[2].file
-    path = joinpath(dirname(String(fprev)), file)
-    name = basename(file) # directory name must match corresponding module name
+    path = joinpath(dirname(String(fprev)), dir)
+    name = basename(dir) # directory name must match corresponding module name
     SUBMODULES[name] = path
     return
 end
 
 """
-Lists all associated submodules.
+    submodules()
+
+List all available submodules.
 """
 submodules() = collect(keys(SUBMODULES))
 
 """
-Lists enabled submodules.
+    enabled()
+
+List enabled submodules.
 """
 function enabled()
     curr = Pkg.project().path
@@ -44,7 +50,7 @@ function enabled()
 end
 
 """
-Lists unregistered dependencies of submodule.
+List unregistered dependencies of submodule.
 """
 function unregistered_deps(submodule::String)
     path = SUBMODULES[submodule]
@@ -53,8 +59,10 @@ function unregistered_deps(submodule::String)
 end
 
 """
-Enables submodule. Can accept multiple strings as vector or multiple arguments.
-With zero arguments defaults to all associated submodules. Takes effect immediately.
+    enable(submodules...)
+
+Enable submodule(s). Accepts one or more strings, or vector of strings. With zero arguments
+defaults to all associated submodules. Takes effect immediately.
 """
 function enable(submodule::String; verbose::Bool=true)
     curr = Pkg.project().path
@@ -92,8 +100,10 @@ enable(args...; verbose::Bool=true) = enable(collect(args); verbose=verbose)
 enable(; verbose::Bool=true) = enable(collect(keys(SUBMODULES)); verbose=verbose)
 
 """
-Disables submodule. Can accept multiple strings as vector or multiple arguments.
-With zero arguments defaults to all enabled submodules. Takes effect after Julia restart.
+    disable(submodules...)
+
+Disable submodule(s). Accepts one or more strings, or vector of strings. With zero arguments
+defaults to all enabled submodules. Takes effect after Julia restart.
 """
 function disable(submodule::String; verbose::Bool=true)
     curr = Pkg.project().path
@@ -124,7 +134,9 @@ disable(args...; verbose::Bool=true) = disable(collect(args); verbose=verbose)
 disable(; verbose::Bool=true) = disable(enabled(); verbose=verbose)
 
 """
-Loads enabled submodules (required after Julia restart). Takes effect immediately.
+    load()
+
+Load enabled submodules (necessary after Julia restart). Takes effect immediately.
 """
 function load(; verbose::Bool=true)
     curr = Pkg.project().path
@@ -144,9 +156,11 @@ function load(; verbose::Bool=true)
 end
 
 """
-Forcibly removes temporary environment, purging all enabled submodules. Only required if
-submodule manager becomes corrupted and `disable()` cannot restore functionality. Takes effect after
-Julia restart.
+    clean()
+
+Forcibly remove temporary environment, purging all enabled submodules. Only necessary if
+submodule manager is corrupted and `disable` cannot restore functionality. Takes effect
+after Julia restart.
 """
 function clean(; verbose::Bool=true)
     rm.(joinpath.(ENV_DIR, readdir(ENV_DIR)))
@@ -154,7 +168,7 @@ function clean(; verbose::Bool=true)
 end
 
 """
-Invokes any submodule-related initializations. Called by top-level __init__() function.
+Invoke any submodule-related initializations. Called by top-level `__init__` function.
 """
 function init_submodules()
     # scratchspace for intermediate projects

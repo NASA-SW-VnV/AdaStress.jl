@@ -36,5 +36,10 @@ function (solver::Solver)(env::Any)
     return solver(() -> env)
 end
 
+"""
+    solve(::Solver, ::Function)
+
+Apply solver to MDP generator function.
+"""
 function solve(::Solver, ::Function) end
 (solver::Solver)(env_fn::Function) = solve(solver, env_fn)
