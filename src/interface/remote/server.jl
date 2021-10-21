@@ -109,7 +109,7 @@ function respond(server::ASTServer, request::Dict)
 
     # server-side sampling
     if server.presample && sym == :actions && action_type(server.mdp) == SampleAction
-        r = Dirac(rand(r; flat=true))
+        r = rand(r; flat=true)
     end
 
     return Dict(:r => r)
@@ -123,6 +123,7 @@ function run(server::ASTServer)
     @async while true
         # listen for incoming connections
         conn = accept(server.serv)
+        Sockets.nagle(conn, false)
         @info "Connected to AST client." conn
         @async while true
             request = BSON.load(conn)

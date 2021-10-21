@@ -60,7 +60,7 @@ function reset!(mdp::RemoteASTMDP)
 end
 
 function actions(mdp::RemoteASTMDP)
-    action_type(mdp) == SeedAction ? UInt32 : call(mdp.client, actions)
+    action_type(mdp) == SeedAction ? UInt32 : Dirac(call(mdp.client, actions))
 end
 
 function observe(mdp::RemoteASTMDP)
@@ -126,6 +126,7 @@ function connect!(client::ASTClient; remote::String="", remote_port::Int64=1812)
     disconnect!(client)
     !isempty(remote) && open_tunnel(client, remote, remote_port)
     client.conn = connect(client.ip, client.port)
+    Sockets.nagle(client.conn, false)
     t_ms = Int64(1000 * round(ping(client); digits=3))
     @info "ASTServer responded in $t_ms milliseconds."
     return
