@@ -24,6 +24,7 @@ mutable struct SquashedGaussianMLPActor
     act_maxs::AbstractVector{Float32}       # maximum values of actions
     rng::AbstractRNG                        # internal RNG
     rng_gpu::Union{AbstractRNG, Nothing}    # internal RNG for GPU calculations
+    linearized::Bool                        # linearized squashing (allows post-analysis)
 end
 
 function SquashedGaussianMLPActor(
@@ -33,7 +34,8 @@ function SquashedGaussianMLPActor(
 	activation::Function,
 	act_mins::Vector{Float64},
 	act_maxs::Vector{Float64},
-	rng::AbstractRNG
+	rng::AbstractRNG,
+    linearized::Bool
 )
     net = mlp(vcat(obs_dim, hidden_sizes), activation, activation) |> gpu
     mu_layer = Dense(hidden_sizes[end], act_dim) |> gpu
@@ -46,7 +48,7 @@ function SquashedGaussianMLPActor(
     else
         rng_gpu = nothing
     end
-    return SquashedGaussianMLPActor(net, mu_layer, log_std_layer, act_mins, act_maxs, rng, rng_gpu)
+    return SquashedGaussianMLPActor(net, mu_layer, log_std_layer, act_mins, act_maxs, rng, rng_gpu, linearized)
 end
 
 """
@@ -106,8 +108,7 @@ function (pi::SquashedGaussianMLPActor)(
     # Linearized "squashing" (allows downstream analysis of learned networks).
     # Note that log probability corresponds to original non-linear squashing.
     # This enables learning to continue with only minor degredation.
-    linear = true
-    if linear
+    if pi.linearized
         pi_action = clamp.(pi_action, pi.act_mins, pi.act_maxs)
     else
         # Original non-linear squashing
@@ -152,12 +153,13 @@ function MLPActorCritic(
 	act_dim::Int,
 	act_mins::Vector{Float64},
 	act_maxs::Vector{Float64},
-	hidden_sizes::Vector{Int}=[256,256],
+	hidden_sizes::Vector{Int},
 	num_q::Int = 2,
 	activation::Function=SoftActorCritic.relu,
-	rng::AbstractRNG=Random.GLOBAL_RNG
+	rng::AbstractRNG=Random.GLOBAL_RNG,
+    linearize::Bool = true
 )
-    pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_mins, act_maxs, rng)
+    pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_mins, act_maxs, rng, linearize)
     qs = [MLPQFunction(obs_dim, act_dim, hidden_sizes, activation) for _ in 1:num_q]
     return MLPActorCritic(pi, qs)
 end
@@ -165,7 +167,7 @@ end
 """
 Retrieve action from policy.
 """
-function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=false)
+function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=true)
     a, _ = ac.pi(obs, deterministic, false)
     return a
 end
