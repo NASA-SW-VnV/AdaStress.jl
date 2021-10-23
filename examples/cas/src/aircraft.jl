@@ -77,28 +77,37 @@ function separation(ac1::Aircraft, ac2::Aircraft; scale::Tuple{R,R}=(1.0, 1.0))
 end
 
 """
-Reduce symmetries of two-aircraft system, yielding R^12 -> R^8.
+Reduce symmetries of two-aircraft system, yielding R^12 -> R^8. Transformed coordinate space
+is in a rotated frame of reference where the center of the system is at the origin. The
+aircraft lie along the x-axis (except for displacement along the z-axis) with aircraft 1 at
+position (d, 0, z) and aircraft 2 at (-d, 0, -z). Horizontal velocity is expressed as a
+magnitude and angle is measured clockwise from the +y direction for both aircraft.
+
+Relative positions are further transformed with an arcsinh function. This provides log-like
+squashing at large magnitudes, preserves linear behavior at small magnitudes, and extends
+smoothly and antisymmetrically to negative values. Since aircraft may travel large distances
+before collision, the transformation encourages the learning of scale-dependent features.
 """
 function kernel(ac1::Aircraft, ac2::Aircraft; scale::Bool=true)
 	ac1, ac2 = observation.((ac1, ac2); scale=scale)
 	r1, v1 = ac1[1:3], ac1[4:6]
 	r2, v2 = ac2[1:3], ac2[4:6]
 
-	rc = (r1 + r2) / 2
-	dr = r1 - rc
-	d = norm(dr[1:2])
-	phi = atan(dr[2], dr[1])
-	vg1 = norm(v1[1:2])
-	vg2 = norm(v2[1:2])
-	psi1 = atan(v1[1:2]...)
-	psi2 = atan(v2[1:2]...)
+	rc = (r1 + r2) / 2        # center of two-aircraft system
+	dr = r1 - rc              # ac1 position relative to center
+	d = norm(dr[1:2])         # horizontal separation
+	phi = atan(dr[2], dr[1])  # angle of two-aircraft system
+	vg1 = norm(v1[1:2])       # ac1 ground speed
+	vg2 = norm(v2[1:2])       # ac2 ground speed
+	psi1 = atan(v1[1:2]...)   # ac1 heading
+	psi2 = atan(v2[1:2]...)   # ac2 heading
 
 	state = zeros(8)
 	# 2D components
 	state[1] = asinh(d)
-	state[2] = wrap_to_pi(psi1 + phi)
+	state[2] = wrap_to_pi(psi1 + phi) # ac1 relative heading
 	state[3] = vg1
-	state[4] = wrap_to_pi(psi2 + phi)
+	state[4] = wrap_to_pi(psi2 + phi) # ac2 relative heading
 	state[5] = vg2
 	# 3D components
 	state[6] = asinh(dr[3])
