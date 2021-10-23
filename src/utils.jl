@@ -15,6 +15,13 @@ const PKG_PATH = dirname(dirname(pathof(@__MODULE__)))      # top-level package 
 const SUBMODULES = Dict{String, String}()                   # submodule table
 
 """
+Suppresses output if verbosity condition is not met.
+"""
+macro verboseif(v, expr)
+    :($(esc(v)) ? $(esc(expr)) : @suppress $(esc(expr)))
+end
+
+"""
     exclude(dir::String)
 
 Associate package directory to main package via submodule table instead of direct code
@@ -40,12 +47,12 @@ submodules() = collect(keys(SUBMODULES))
 
 List enabled submodules.
 """
-function enabled()
+function enabled(; verbose::Int64=1)
     curr = Pkg.project().path
-    @suppress Pkg.activate(ENV_DIR)
+    @verboseif (verbose >= 2) Pkg.activate(ENV_DIR)
     deps = filter(p -> p[2].is_direct_dep, Pkg.dependencies())
     names = (d -> d.name).(values(deps))
-    @suppress Pkg.activate(curr)
+    @verboseif (verbose >= 2) Pkg.activate(curr)
     return filter(d -> d != PKG_NAME && d in keys(SUBMODULES), names)
 end
 
@@ -59,98 +66,99 @@ function unregistered_deps(submodule::String)
 end
 
 """
-    enable(submodules...)
+    enable(submodule)
 
-Enable submodule(s). Accepts one or more strings, or vector of strings. With zero arguments
-defaults to all associated submodules. Takes effect immediately.
+Enable submodule(s). Accepts string or vector of strings. With zero arguments defaults to
+all associated submodules. Takes effect immediately.
 """
-function enable(submodule::String; verbose::Bool=true)
+function enable(submodules::Vector{String}; verbose::Int64=1)
     curr = Pkg.project().path
-    try
-        @suppress begin
-            Pkg.activate(ENV_DIR)
-            Pkg.develop(path=PKG_PATH) # updates AdaStress if necessary
-
-            dev_pkgs = readdir(DEV_DIR)
-            for (dep, url) in unregistered_deps(submodule)
-                dep in dev_pkgs ? Pkg.develop(dep) : Pkg.develop(url=url)
-            end
-
-            Pkg.develop(path=SUBMODULES[submodule])
-            @eval using $(Symbol(submodule))
+    pkgs = [PackageSpec(path=PKG_PATH)] # update AdaStress if necessary
+    dev_pkgs = readdir(DEV_DIR)
+    for submodule in submodules
+        for (dep, url) in unregistered_deps(submodule)
+            push!(pkgs, dep in dev_pkgs ? PackageSpec(name=dep) : PackageSpec(url=url))
         end
-        verbose && @info "Enabled submodule $submodule."
-    catch e
-        verbose && @error "Unable to enable submodule $submodule."
+        push!(pkgs, PackageSpec(path=SUBMODULES[submodule]))
+    end
 
-        Pkg.rm(submodule)
+    try
+        @verboseif (verbose >= 2) begin
+            Pkg.activate(ENV_DIR)
+            Pkg.develop(pkgs)
+            for submodule in submodules
+                @eval using $(Symbol(submodule))
+            end
+        end
+        @verboseif (verbose >= 1) foreach(s -> @info("Enabled submodule $s."), submodules)
+    catch e
+        @verboseif (verbose >= 1) @error "Cannot enable submodule(s)."
+        @verboseif (verbose >= 2) foreach(pkg -> try Pkg.rm(pkg) catch end, pkgs[2:end])
+        throw(e)
+    finally
+        @verboseif (verbose >= 2) Pkg.activate(curr)
+    end
+    return
+end
+
+enable(submodule::String; kwargs...) = enable([submodule]; kwargs...)
+enable(; kwargs...) = enable(submodules(); kwargs...)
+
+"""
+    disable(submodule)
+
+Disable submodule(s). Accepts string or vector of strings. With zero arguments defaults to
+all enabled submodules. Takes effect after Julia restart.
+"""
+function disable(submodules::Vector{String}; verbose::Int64=1)
+    curr = Pkg.project().path
+    pkgs = String[]
+    for submodule in submodules
+        push!(pkgs, submodule)
         for (dep, _) in unregistered_deps(submodule)
-            Pkg.rm(dep)
+            # NOTE: will cause problems if multiple enabled submodules use the same
+            #       unregistered dependencies, but this is unlikely, given the ideally
+            #       rare usage of such dependencies.
+            push!(pkgs, dep)
         end
-
-        throw(e)
-    finally
-        @suppress Pkg.activate(curr)
     end
-    return
-end
 
-enable(submodules::Vector; verbose::Bool=true) = (enable.(submodules; verbose=verbose); nothing)
-enable(args...; verbose::Bool=true) = enable(collect(args); verbose=verbose)
-enable(; verbose::Bool=true) = enable(collect(keys(SUBMODULES)); verbose=verbose)
-
-"""
-    disable(submodules...)
-
-Disable submodule(s). Accepts one or more strings, or vector of strings. With zero arguments
-defaults to all enabled submodules. Takes effect after Julia restart.
-"""
-function disable(submodule::String; verbose::Bool=true)
-    curr = Pkg.project().path
     try
-        @suppress begin
+        @verboseif (verbose >= 2) begin
             Pkg.activate(ENV_DIR)
-            Pkg.rm(submodule)
-
-            for (dep, _) in unregistered_deps(submodule)
-                # NOTE: will cause problems if multiple enabled submodules use the same
-                #       unregistered dependencies, but this is unlikely, given the ideally
-                #       rare usage of such dependencies.
-                Pkg.rm(dep)
-            end
+            Pkg.rm(pkgs)
         end
-        verbose && @info "Disabled submodule $submodule."
+        @verboseif (verbose >= 1) foreach(s -> @info("Disabled submodule $s."), submodules)
     catch e
-        verbose && @error "Unable to disable submodule $submodule."
+        @verboseif (verbose >= 1) @error "Cannot disable submodule(s)."
         throw(e)
     finally
-        @suppress Pkg.activate(curr)
+        @verboseif (verbose >= 2) Pkg.activate(curr)
     end
     return
 end
 
-disable(submodules::Vector; verbose::Bool=true) = (disable.(submodules; verbose=verbose); nothing)
-disable(args...; verbose::Bool=true) = disable(collect(args); verbose=verbose)
-disable(; verbose::Bool=true) = disable(enabled(); verbose=verbose)
+disable(submodule::String; kwargs...) = disable([submodule]; kwargs...)
+disable(; kwargs...) = disable(enabled(; kwargs...); kwargs...)
 
 """
     load()
 
 Load enabled submodules (necessary after Julia restart). Takes effect immediately.
 """
-function load(; verbose::Bool=true)
+function load(; verbose::Int64=1)
     curr = Pkg.project().path
     try
-        @suppress Pkg.activate(ENV_DIR)
+        @verboseif (verbose >= 2) Pkg.activate(ENV_DIR)
         for submodule in enabled()
             @suppress @eval using $(Symbol(submodule))
-            verbose && @info "Loaded submodule $submodule."
+            @verboseif (verbose >= 1) @info "Loaded submodule $submodule."
         end
     catch e
-        verbose && @error "Unable to load enabled submodules."
+        @verboseif (verbose >= 1) @error "Unable to load enabled submodules."
         throw(e)
     finally
-        @suppress Pkg.activate(curr)
+        @verboseif (verbose >= 2) Pkg.activate(curr)
     end
     return
 end
@@ -162,9 +170,9 @@ Forcibly remove temporary environment, purging all enabled submodules. Only nece
 submodule manager is corrupted and `disable` cannot restore functionality. Takes effect
 after Julia restart.
 """
-function clean(; verbose::Bool=true)
+function clean(; verbose::Int64=1)
     rm.(joinpath.(ENV_DIR, readdir(ENV_DIR)))
-    verbose && @info "Cleaned submodule environment."
+    @verboseif (verbose >= 1) @info "Cleaned submodule environment."
 end
 
 """
