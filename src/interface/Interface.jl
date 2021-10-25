@@ -12,7 +12,7 @@ using Random
 using Sockets
 import Base: rand
 
-export ASTMDP, BlackBox, GrayBox, Environment, EnviornmentValue
+export ASTMDP, BlackBox, GrayBox, Environment, EnvironmentValue
 export VariableInfo, ObservableState, UnobservableState, SampleAction, SeedAction
 export reset!, environment, observe, step!, isterminal, isevent, distance, flatten, unflatten
 export Reward, WeightedObjective, VectorObjective
