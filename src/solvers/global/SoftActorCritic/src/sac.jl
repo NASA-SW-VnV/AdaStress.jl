@@ -68,6 +68,7 @@ function update(
 	alpha::AbstractVector{Float32},
 	target_entropy::Float64
 )
+    average = length(ac.qs) > 2 # if ensemble is size 2, take min, otherwise take mean
 
     # Transfer data to GPU
     data = (; zip(keys(data), gpu.(values(data)))...)
@@ -76,7 +77,7 @@ function update(
     loss_q = 0.0
     q_ps = params((q -> q.q).(ac.qs))
     q_gs = gradient(q_ps) do
-        loss_q = compute_loss_q(ac, ac_targ, data, gamma, alpha)
+        loss_q = compute_loss_q(ac, ac_targ, data, gamma, alpha; average=average)
         return loss_q
     end
     Flux.update!(q_optimizer, q_ps, q_gs)
@@ -85,7 +86,7 @@ function update(
     loss_pi = 0.0
     pi_ps = params([ac.pi.net, ac.pi.mu_layer, ac.pi.log_std_layer])
     pi_gs = gradient(pi_ps) do
-        loss_pi = compute_loss_pi(ac, data, alpha)
+        loss_pi = compute_loss_pi(ac, data, alpha; average=average)
         return loss_pi
     end
     Flux.update!(pi_optimizer, pi_ps, pi_gs)
@@ -133,7 +134,7 @@ function test_agent(
         o = observe(test_env)
         os, as = Vector{Float32}[], Vector{Float32}[]
         while !(d || ep_len > max_ep_len)
-            a = ac(o, true)
+            a = ac(o)
             push!(os, o)
             push!(as, a)
             d = terminated(test_env)
@@ -181,6 +182,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     hidden_sizes::Vector{Int} = [100,100,100]       # dimensions of any hidden layers
     num_q::Int = 2                                  # size of critic ensemble
     activation::Function = SoftActorCritic.relu     # activation after each hidden layer
+    linearized::Bool = true                         # linearized policy squashing
 
     # Training
     q_optimizer::Any = AdaBelief(1e-4)              # optimizer for value networks
@@ -217,7 +219,7 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     env = env_fn()
     test_env = env_fn()
     ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
-        sac.hidden_sizes, sac.num_q, sac.activation, sac.rng)
+        sac.hidden_sizes, sac.num_q, sac.activation, sac.rng, sac.linearized)
     ac_targ = deepcopy(ac)
     ac_cpu = to_cpu(ac)
     alpha = [1.0f0] |> gpu
@@ -257,8 +259,10 @@ function Solvers.solve(sac::SAC, env_fn::Function)
             o = observe(env)
         end
 
+        t <= sac.update_after && continue
+
         # Actor-critic update
-        if t > sac.update_after && t % sac.update_every == 0
+        if t % sac.update_every == 0
             @debug "Updating models" t
             for b in 1:sac.num_batches
                 @debug "Batch" b
@@ -278,21 +282,19 @@ function Solvers.solve(sac::SAC, env_fn::Function)
 
             # Log info about epoch
             @debug("Evaluation",
-            	  alpha,
-                  mean(mean.(params([q.q for q in ac_cpu.qs]))),
-            	  mean(mean.(params([ac_cpu.pi.net, ac_cpu.pi.mu_layer, ac_cpu.pi.log_std_layer])))
+                alpha,
+                mean(mean.(params([q.q for q in ac_cpu.qs]))),
+                mean(mean.(params([ac_cpu.pi.net, ac_cpu.pi.mu_layer, ac_cpu.pi.log_std_layer])))
             )
         end
 
         # Checkpointing
-        if sac.save && t > sac.update_after && t % sac.save_every == 0
+        if sac.save && t % sac.save_every == 0
             checkpoint(ac_cpu, sac.save_dir, sac.max_saved)
         end
 
         # Progress meter
-        if t > sac.update_after
-            ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disp_tups))
-        end
+        ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disp_tups))
     end
 
     # Save display values and replay buffer
