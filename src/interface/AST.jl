@@ -90,13 +90,22 @@ end
 """
     ASTMDP(sim::AbstractSimulation; kwargs...)
 
-Constructor for ASTMDP object. Infers various properties of MDP.
+Constructor for ASTMDP object. Infers various properties of MDP. Allows kwargs to be
+specified flatly and automatically assigns to correct level.
 """
 function ASTMDP(sim::AbstractSimulation; kwargs...)
     reset!(sim)
-    act_type = sim isa BlackBox ? SeedAction : SampleAction
+    s_type = infer_state(sim)
+    a_type = sim isa BlackBox ? SeedAction : SampleAction
     env_info = sim isa BlackBox ? EnvironmentInfo() : infer_info(environment(sim))
-    mdp = ASTMDP{infer_state(sim), act_type}(; sim=sim, kwargs..., env_info=env_info)
+    mdp = ASTMDP{s_type, a_type}(; sim=sim, env_info=env_info)
+
+    # automatically applies kwarg to reward if match is found
+    for k in keys(kwargs)
+        obj = k in fieldnames(ASTMDP) || !(k in fieldnames(Reward)) ? mdp : mdp.reward
+        setproperty!(obj, k, kwargs[k])
+    end
+
     mdp.reward.heuristic = mdp.episodic ? FinalHeuristic() : mdp.reward.heuristic
     global RNG_TEMP = deepcopy(mdp.rng)
     return mdp
