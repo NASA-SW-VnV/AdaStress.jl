@@ -48,16 +48,11 @@ end
 visualize(root::Cell; kwargs...) = visualize!(plot(), root; kwargs...)
 
 """
-    visualize(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
+    visualize(nnet::Network, limits::NTuple{2, Vector{Float64}})
 
 Visualize network cross-section.
 """
-function visualize(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
-    return visualize(network, linearize(cs), limits)
-end
-
-function visualize(network::ExtendedNetwork, lcs::LinearCrossSection, limits::NTuple{2, Vector{Float64}})
-    nnet = cross_section(network, lcs, limits)
+function visualize(nnet::Network, limits::NTuple{2, Vector{Float64}})
     if size(nnet.layers[1].weights, 2) != 2
         error("Number of free variables must be 2.")
     end
