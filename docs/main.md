@@ -142,25 +142,21 @@ Another parameter of the `ASTMDP` is the Boolean value `episodic`, which default
 
 For an example of an episodic problem, see the notebook in `examples/fms`.
 
-## Remote interface
+## Serialization interface
 
-Stress testing can be performed on a remote system. Since the package architecture is largely separable, SUT interfacing and solving can be completely decoupled, to the point of occurring on separate systems. There are three major use cases for this feature:
+In certain situations, it may be useful to run the testing and simulation as separate independent processes.  AdaStress supports this mode of operation via an optional serialization interface between the simulation and the solver. There are three major use cases for this feature:
 
-### Testing of confidential or proprietary systems
+### Restricting information flow 
 
-In certain situations, a party with an SUT (the *designer*) may want to make use of the computational resources and infrastructure of another party (the *tester*). The SUT and its implementation might be in some way private or embedded, and unable to be deployed directly to a cloud-based resource.
-
-The remote interface contains multiple features to address security in such a case. The connection between tester and designer is encrypted with SSH. The "information gap" afforded by the module separation allows the tester to remain almost entirely independent, having no access to information about the system or its behavior other than the limited data that the tester chooses to share.
-
-An additional layer of security is provided by an optional private token or password that the designer may enable. This option forces actions to be rehashed, ensuring that a party with access to the SUT and a set of action traces known to elicit system failure would nonetheless be unable to reproduce the failures without the token. This feature allows knowledge of a system's weaknesses to itself remain confidential, which could be useful in cases of heightened security. For an example of this sort of use, see the notebooks in `examples/pedestrian`.
+In some cases, it may be required to keep a separation between the simulation and tester.  The serialization interface can be used to enforce the restriction of information from the simulation to the tester. 
 
 ### Distributed computing
 
-The remote interface also permits distributed computing, allowing stress testing to scale across clusters.
+The serialization interface also permits distributed computing, allowing stress testing to scale across multiple processors.
 
 ### Cross-language support
 
-The remote capabilities also make it easier to interact with other programming languages in cases where there does not exist a robust Julia interface. Instead of reimplementing the full package in another language, it is only strictly necessary to implement the interface side. A related use case is bridging incompatible versions of Julia.
+The serialization capabilities also make it easier to interact with other programming languages in cases where there does not exist a robust Julia interface. Instead of reimplementing the full package in another language, it is only strictly necessary to implement the interface side. A related use case is bridging incompatible versions of Julia.
 
 ## Submodule management
 
