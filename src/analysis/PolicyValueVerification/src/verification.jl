@@ -18,6 +18,7 @@ Base.@kwdef mutable struct CellStatus
     hash::UInt64 = hash(0)
     member::Bool = false
     proven::Bool = false
+    pid::Int64 = 0
 end
 
 """
@@ -168,8 +169,6 @@ end
 Perform PVV analysis, using multiple processes if available.
 """
 function analyze(r::AbstractRefinery, limits::Tuple{Vector{<:Real}, Vector{<:Real}})
-    @eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
-
     TODO_COUNTER[] = 1
     tree = get_root(limits)
 
@@ -199,6 +198,11 @@ function analyze(r::AbstractRefinery, limits::Tuple{Vector{<:Real}, Vector{<:Rea
         end
     end
 
-    print_metrics(tree)
+    try
+        print_metrics(tree)
+    catch
+        println("Unable to calculate metrics.")
+    end
+
     return tree
 end

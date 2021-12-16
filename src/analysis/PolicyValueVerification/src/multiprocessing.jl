@@ -4,30 +4,28 @@ const results = RemoteChannel(()->Channel{Cell}(1000000))
 const TERMINATE = 0x0
 
 """
-Make k workers available in total, spawning new processes only when necessary.
+Make k workers available in total, spawning new processes only as necessary.
 """
-getworkers(k::Int64) = addprocs(max(k + 1 - nprocs(), 0))
+get_workers(k::Int64) = addprocs(max(k + 1 - nprocs(), 0))
 
 """
 Recursively build miniminal k-d tree that defines volumes proven to satisfy given condition
 or its complement. At specificed depth levels, places children onto jobs queue instead of
-refining, to maintain an even work distribution across processes.
+refining, to maintain a balanced work distribution across processes.
 """
 function refine!(cell::Cell, r::AbstractRefinery, jobs::RemoteChannel)
+    cell.data.pid = myid()
     if needs_refinement(cell, r)
         split!(cell, child_data)
         cs = children(cell)
 
-        # If cell is at detachment depth, children are detached and
-        # placed onto jobs queue. Detachment is necessary to avoid
-        # copying entire tree onto queue through parent references.
         if cell.data.depth in r.ks
             for c in cs
-                c.parent = nothing
+                c.parent = nothing      # detach to avoid copying entire tree onto queue
                 c.data.detached = true
                 put!(jobs, c)
             end
-            remotecall_wait(add_todo, length(cs)) # wait for acknowledgement
+            remotecall_wait(add_todo, 1, length(cs)) # wait for acknowledgement
         else
             for c in cs
                 refine!(c, r, jobs)
@@ -52,7 +50,7 @@ function work(jobs::RemoteChannel, results::RemoteChannel, r::AbstractRefinery)
         cell.data.hash == TERMINATE && break
         refine!(cell, r, jobs)
         put!(results, cell)
-        remote_do(add_done, 1) # no wait required
+        remote_do(add_done, 1, 1) # no wait required
     end
 end
 
@@ -120,6 +118,13 @@ end
 Run multiprocess refinement.
 """
 function refine_multiprocess!(root::Cell, r::AbstractRefinery)
+    # Empty channels
+    for ch in (jobs, results)
+        while isready(ch)
+            take!(ch)
+        end
+    end
+
     # Remotely execute work task.
     put!(jobs, root)
     TODO_COUNTER[] = 1

@@ -48,7 +48,7 @@ include("analysis.jl")
 include("visualization.jl")
 
 function __init__()
-    # @eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
+    @eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
 end
 
 end
