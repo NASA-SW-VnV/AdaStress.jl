@@ -50,6 +50,7 @@ function visualize!(p, root::Cell; fill::Symbol=:none, tol::Float64=0.01)
     return p
 end
 
+visualize(p, root::Cell; kwargs...) = visualize!(deepcopy(p), root; kwargs...)
 visualize(root::Cell; kwargs...) = visualize!(plot(), root; kwargs...)
 
 """
