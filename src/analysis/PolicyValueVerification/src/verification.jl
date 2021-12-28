@@ -158,7 +158,7 @@ end
 """
 Generate root from region limits.
 """
-function get_root(limits::NTuple{2, Vector{Float64}})
+function get_root(limits::NTuple{2, Vector{<:Real}})
     lows, highs = limits
     widths = highs - lows
     root = Cell(SVector(lows...), SVector(widths...), CellStatus())
@@ -168,7 +168,7 @@ end
 """
 Perform PVV analysis, using multiple processes if available.
 """
-function analyze(r::AbstractRefinery, limits::Tuple{Vector{<:Real}, Vector{<:Real}})
+function analyze(r::AbstractRefinery, limits::Tuple{Vector, Vector}; progress::Bool=true, multiproc::Bool=true)
     TODO_COUNTER[] = 1
     tree = get_root(limits)
 
@@ -176,7 +176,7 @@ function analyze(r::AbstractRefinery, limits::Tuple{Vector{<:Real}, Vector{<:Rea
         # Refinement process
         @async begin
             try
-                if nprocs() == 1
+                if nprocs() == 1 || !multiproc
                     refine!(tree, r)
                 else
                     refine_multiprocess!(tree, r)
@@ -187,14 +187,16 @@ function analyze(r::AbstractRefinery, limits::Tuple{Vector{<:Real}, Vector{<:Rea
         end
 
         # Progress meter
-        @async begin
-            p = ProgressUnknown("Cells awaiting processing:")
-            while TODO_COUNTER[] > 0
-                ProgressMeter.update!(p, TODO_COUNTER[]; ignore_predictor=true)
-                sleep(0.1)
+        if progress
+            @async begin
+                p = ProgressUnknown("Cells awaiting processing:")
+                while TODO_COUNTER[] > 0
+                    ProgressMeter.update!(p, TODO_COUNTER[]; ignore_predictor=true)
+                    sleep(0.1)
+                end
+                ProgressMeter.update!(p, 0)
+                ProgressMeter.finish!(p)
             end
-            ProgressMeter.update!(p, 0)
-            ProgressMeter.finish!(p)
         end
     end
 

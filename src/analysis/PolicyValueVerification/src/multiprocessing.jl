@@ -1,6 +1,4 @@
 
-const jobs = RemoteChannel(()->Channel{Cell}(1000000))
-const results = RemoteChannel(()->Channel{Cell}(1000000))
 const TERMINATE = 0x0
 
 """
@@ -106,7 +104,7 @@ end
 Terminate worker processes.
 """
 function terminate(jobs::RemoteChannel)
-    signal = Cell(SVector(0.0), SVector(0.0), CellStatus(hash=TERMINATE))
+    signal = Cell(SVector{0, Float64}(), SVector{0, Float64}(), CellStatus(hash=TERMINATE))
     for _ in workers()
         put!(jobs, signal)
     end
@@ -118,12 +116,8 @@ end
 Run multiprocess refinement.
 """
 function refine_multiprocess!(root::Cell, r::AbstractRefinery)
-    # Empty channels
-    for ch in (jobs, results)
-        while isready(ch)
-            take!(ch)
-        end
-    end
+    jobs = RemoteChannel(() -> Channel{Cell}(1_000_000))
+    results = RemoteChannel(() -> Channel{Cell}(1_000_000))
 
     # Remotely execute work task.
     put!(jobs, root)

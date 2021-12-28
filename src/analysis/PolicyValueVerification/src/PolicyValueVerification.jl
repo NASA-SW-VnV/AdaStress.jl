@@ -4,24 +4,19 @@ neural networks.
 """
 module PolicyValueVerification
 
-__precompile__(false) #TODO: remove?
-
 export
     CrossSection,
-    LinearCrossSection,
     BinaryRefinery,
     IntervalRefinery,
 
-    coverage,
     cross_section,
     get_root,
     mean_network,
     spread_network,
-    num_leaves,
+    print_metrics,
     visualize,
     visualize!,
-    refine!,
-    refine_multiprocess!
+    analyze
 
 using AdaStress: GlobalResult
 
