@@ -153,9 +153,9 @@ function MLPActorCritic(
 	num_q::Int=2,
 	activation::Function=SoftActorCritic.relu,
 	rng::AbstractRNG=Random.GLOBAL_RNG,
-    linearize::Bool=true
+    linearized::Bool=false
 )
-    pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_mins, act_maxs, rng, linearize)
+    pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_mins, act_maxs, rng, linearized)
     qs = [MLPQFunction(obs_dim, act_dim, hidden_sizes, activation) for _ in 1:num_q]
     return MLPActorCritic(pi, qs)
 end
