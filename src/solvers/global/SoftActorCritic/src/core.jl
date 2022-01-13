@@ -105,13 +105,9 @@ function (pi::SquashedGaussianMLPActor)(
         logp_pi = NaN
     end
 
-    # Linearized "squashing" (allows downstream analysis of learned networks).
-    # Note that log probability corresponds to original non-linear squashing.
-    # This enables learning to continue with only minor degredation.
-    if pi.linearized
+    if pi.linearized # probabilities still correspond to non-linear squashing
         pi_action = clamp.(pi_action, pi.act_mins, pi.act_maxs)
     else
-        # Original non-linear squashing
         pi_action = tanh.(pi_action)
         pi_action = @. pi.act_mins + (pi.act_maxs - pi.act_mins) * (pi_action / 2 + 0.5f0)
     end

@@ -182,7 +182,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     hidden_sizes::Vector{Int} = [100,100,100]       # dimensions of any hidden layers
     num_q::Int = 2                                  # size of critic ensemble
     activation::Function = SoftActorCritic.relu     # activation after each hidden layer
-    linearized::Bool = true                         # linearized policy squashing
+    linearized::Bool = false                        # linearized policy squashing
 
     # Training
     q_optimizer::Any = AdaBelief(1e-4)              # optimizer for value networks
