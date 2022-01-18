@@ -71,7 +71,7 @@ function update(
     average = length(ac.qs) > 2 # if ensemble is size 2, take min, otherwise take mean
 
     # Transfer data to GPU
-    data = (; zip(keys(data), gpu.(values(data)))...)
+    data = (; zip(keys(data), dev.(values(data)))...)
 
     # Gradient descent step for value networks
     loss_q = 0.0
@@ -222,7 +222,7 @@ function Solvers.solve(sac::SAC, env_fn::Function)
         sac.hidden_sizes, sac.num_q, sac.activation, sac.rng, sac.linearized)
     ac_targ = deepcopy(ac)
     ac_cpu = to_cpu(ac)
-    alpha = [1.0f0] |> gpu
+    alpha = [1.0f0] |> dev
     total_steps = sac.steps_per_epoch * sac.epochs
     mkpath(sac.save_dir)
 

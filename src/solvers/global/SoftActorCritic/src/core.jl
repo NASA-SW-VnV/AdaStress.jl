@@ -10,7 +10,7 @@ function mlp(sizes::Vector{Int}, activation::Function, output_activation::Functi
         act = j < length(sizes) - 1 ? activation : output_activation
         push!(layers, Dense(sizes[j], sizes[j + 1], act))
     end
-    return Chain(layers...) |> gpu
+    return Chain(layers...) |> dev
 end
 
 """
@@ -37,11 +37,11 @@ function SquashedGaussianMLPActor(
 	rng::AbstractRNG,
     linearized::Bool
 )
-    net = mlp(vcat(obs_dim, hidden_sizes), activation, activation) |> gpu
-    mu_layer = Dense(hidden_sizes[end], act_dim) |> gpu
-    log_std_layer = Dense(hidden_sizes[end], act_dim) |> gpu
-    act_mins, act_maxs = gpu(Float32.(act_mins)), gpu(Float32.(act_maxs))
-    if WITH_GPU
+    net = mlp(vcat(obs_dim, hidden_sizes), activation, activation) |> dev
+    mu_layer = Dense(hidden_sizes[end], act_dim) |> dev
+    log_std_layer = Dense(hidden_sizes[end], act_dim) |> dev
+    act_mins, act_maxs = dev(Float32.(act_mins)), dev(Float32.(act_maxs))
+    if HAS_GPU[]
         rng_gpu = CURAND.RNG()
         seed = rand(rng, UInt32)
         Random.seed!(rng_gpu, seed)
