@@ -1,23 +1,29 @@
 
+const TERMINATE = 0x0
+
+"""
+Make k workers available in total, spawning new processes only as necessary.
+"""
+get_workers(k::Int64) = addprocs(max(k + 1 - nprocs(), 0))
+
 """
 Recursively build miniminal k-d tree that defines volumes proven to satisfy given condition
 or its complement. At specificed depth levels, places children onto jobs queue instead of
-refining, to maintain an even work distribution across processes.
+refining, to maintain a balanced work distribution across processes.
 """
 function refine!(cell::Cell, r::AbstractRefinery, jobs::RemoteChannel)
+    cell.data.pid = myid()
     if needs_refinement(cell, r)
         split!(cell, child_data)
         cs = children(cell)
 
-        # If cell is at detachment depth, children are detached and
-        # placed onto jobs queue. Detachment is necessary to avoid
-        # copying entire tree onto queue through parent references.
         if cell.data.depth in r.ks
             for c in cs
-                c.parent = nothing
+                c.parent = nothing      # detach to avoid copying entire tree onto queue
                 c.data.detached = true
                 put!(jobs, c)
             end
+            remotecall_wait(add_todo, 1, length(cs)) # wait for acknowledgement
         else
             for c in cs
                 refine!(c, r, jobs)
@@ -32,19 +38,18 @@ end
 Take a cell from the jobs queue, refine it (possibly spawning more jobs in the process), and
 place it onto the results queue. Result may not be a well-formed tree; the worker does not
 wait on detached children. The forest is stitched together by the main process after all
-workers have completed. Each worker indicates its idle status by setting an index in a
-shared array, and breaks upon receiving a termination signal (a cell with a 0x0 hash).
+workers have completed. Workers increment a shared atomic counter when adding to the jobs
+queue and decerement it when adding to the results queue. Workers break upon receiving a
+termination signal (a cell with a null hash).
 """
-function work(jobs::RemoteChannel, results::RemoteChannel, idle::SharedArray, r::AbstractRefinery)
+function work(jobs::RemoteChannel, results::RemoteChannel, r::AbstractRefinery)
     while true
         cell = take!(jobs)
-        cell.data.hash == 0x0 && break
-        idle[myid()] = false
+        cell.data.hash == TERMINATE && break
         refine!(cell, r, jobs)
         put!(results, cell)
-        idle[myid()] = true
+        remote_do(add_done, 1, 1) # no wait required
     end
-    return nothing
 end
 
 """
@@ -96,11 +101,11 @@ function merge!(root::Cell, results::RemoteChannel)
 end
 
 """
-Terminate idle worker processes.
+Terminate worker processes.
 """
 function terminate(jobs::RemoteChannel)
-    signal = Cell(SVector(0.0), SVector(0.0), CellStatus(hash=0x0))
-    for p in workers()
+    signal = Cell(SVector{0, Float64}(), SVector{0, Float64}(), CellStatus(hash=TERMINATE))
+    for _ in workers()
         put!(jobs, signal)
     end
 end
@@ -111,17 +116,19 @@ end
 Run multiprocess refinement.
 """
 function refine_multiprocess!(root::Cell, r::AbstractRefinery)
+    jobs = RemoteChannel(() -> Channel{Cell}(1_000_000))
+    results = RemoteChannel(() -> Channel{Cell}(1_000_000))
+
     # Remotely execute work task.
     put!(jobs, root)
-	idle = SharedArray{Bool,1}((nprocs(),))
+    TODO_COUNTER[] = 1
     for p in workers()
-        remote_do(work, p, jobs, results, idle, r)
+        remote_do(work, p, jobs, results, r)
     end
 
-    # Block until all workers report being idle, then send termination signal.
-    #TODO: consider replacing idle array with global counter
-    while !all(idle[2:end]) || isready(jobs)
-    	sleep(1.0)
+    # Block until there is no outstanding work, then send termination signal.
+    while TODO_COUNTER[] > 0
+    	sleep(0.1)
     end
     terminate(jobs)
 

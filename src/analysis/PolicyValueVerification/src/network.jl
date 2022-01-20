@@ -1,4 +1,61 @@
 
+TANH_APPROX = nothing
+
+"""
+Load tanh approximator from bson if uninitiated.
+"""
+function load_tanh()
+    if TANH_APPROX === nothing
+        global TANH_APPROX = BSON.load(joinpath(@__DIR__, "tanh.bson"), @__MODULE__)[:network]
+    end
+    return TANH_APPROX
+end
+
+"""
+Retrain neural network univariate tanh approximator. Ensures f(x) = f(-x) and |f(x)| <= 1.
+"""
+function retrain_tanh(; depth::Int64=1, width::Int64=10, num_iter::Int64=10000, num_samples::Int64=1000)
+    # Create model
+    layers = Dense[]
+    push!(layers, Dense(1, width, relu))
+    for _ in 1:(depth - 1)
+        push!(layers, Dense(width, width, relu))
+    end
+    push!(layers, Dense(width, 1))
+    model = Chain(layers...)
+    ps = Flux.params(model)
+    opt = AdaBelief(1e-3)
+
+    # Train network
+    p = Progress(num_iter)
+    loss = Ref(0.0)
+    for _ in 1:num_iter
+        x = randn(1, num_samples)
+        gs = gradient(ps) do
+            loss[] = sum((tanh.(x) .- model(x)).^2)
+        end
+        Flux.update!(opt, ps, gs)
+        ProgressMeter.next!(p; showvalues = [(:loss, loss[])])
+    end
+
+    # Antisymmetrize
+    d1 = Dense(reshape([1.0f0, -1.0f0], 2, 1))
+    d2 = Dense(reshape([0.5f0, -0.5f0], 1, 2))
+    layers = Dense[]
+    for d in m.layers
+        W = [d.W zero(d.W); zero(d.W) d.W]
+        b = [d.b; d.b]
+        push!(layers, Dense(W, b, d.σ))
+    end
+
+    # Clamp
+    u, v = -1.0f0, 1.0f0
+    d3 = Dense(reshape([1.0f0, 1.0f0], 2, 1), [-u, -v], relu)
+    d4 = Dense(reshape([1.0f0, -1.0f0], 1, 2), [u])
+
+    global TANH_APPROX = Chain(d1, layers..., d2, d3, d4)
+end
+
 """
 Extended neural network containing metadata about transformations.
 """
@@ -10,58 +67,42 @@ Base.@kwdef mutable struct ExtendedNetwork
 end
 
 """
-Translate regular Flux activation functions to nnet functions. Limited to `identity` and
-`relu`. Attempts to infer anonymous functions if encountered.
+Convert Flux activation functions to nnet functions. Limited to `identity` and `relu`.
 """
-function func_translate(f::Function)
+function convert_f(f::Function)
     fsym = Symbol(f)
     if fsym == :identity
-        nsym = :Id
+        return NeuralVerification.Id()
     elseif fsym == :relu
-        nsym = :ReLU
+        return NeuralVerification.ReLU()
     else
-        p1 = f(1.0)
-        m1 = f(-1.0)
-        if p1 == 1.0 && m1 == -1.0
-            nsym = :Id
-            @warn "Inferred anonymous function as identity."
-        elseif p1 == 1.0 && m1 == 0.0
-            nsym = :ReLU
-            @warn "Inferred anonymous function as relu."
-        else
-            error("Unable to translate or infer $f.")
-        end
+        error("Unable to convert $f.")
     end
-    return getproperty(NeuralVerification, nsym)()
 end
 
 """
 Pad front of matrix with zeros.
 """
-function fpad(M::Matrix{<:Real}, dims::Tuple{Int64,Int64})
+function fpad(M::Matrix{T}, dims::Tuple{Int64,Int64}) where T
     i, j = size(M)
     ip, jp = dims
-    t = eltype(M)
-    Mp = hcat(zeros(t, i + ip, jp), vcat(zeros(t, ip, j), M))
+    Mp = hcat(zeros(T, i + ip, jp), vcat(zeros(T, ip, j), M))
     return Mp
 end
 
 """
 Pad front of vector with zeros.
 """
-function fpad(v::Vector{<:Real}, sz::Int64)
-    t = eltype(v)
-    vp = vcat(zeros(t, sz), v)
-    return vp
+function fpad(v::Vector{T}, sz::Int64) where T
+    return vcat(zeros(T, sz), v)
 end
 
 """
 Pad front of matrix with identity.
 """
-function fpad_id(M::Matrix{<:Real}, sz::Int64)
+function fpad_id(M::Matrix{T}, sz::Int64) where T
     Mp = fpad(M, (sz, sz))
-    t = eltype(M)
-    Mp[1:sz,1:sz] = Matrix{t}(I, sz, sz)
+    Mp[1:sz,1:sz] = Matrix{T}(I, sz, sz)
     return Mp
 end
 
@@ -71,7 +112,7 @@ Pad front of Flux.Dense layer and convert to nnet layer.
 function fpad(l::Dense, sz::Int64)
     W = fpad_id(l.weight, sz)
     b = fpad(l.bias, sz)
-    σ = func_translate(l.σ)
+    σ = convert_f(l.σ)
     return Layer(W, b, σ)
 end
 
@@ -94,6 +135,80 @@ function block_diag(matrices...)
 end
 
 """
+Construct block diagonal matrix repetition.
+"""
+function rep_diag(M::Matrix, n::Int64)
+    A = [[i == j ? M : zero(M) for i in 1:n] for j in 1:n]
+    return reduce(hcat, reduce(vcat, m) for m in A)
+end
+
+"""
+Construct network that squashes input elementwise with tanh approximator, provided lower
+and upper bounds.
+"""
+function squash_model(ls::Vector{Float64}, us::Vector{Float64})
+    # Stack of tanh approximators
+    n = length(ls)
+    layers = Dense[]
+    for d in load_tanh().layers
+        W = rep_diag(d.W, n)
+        b = repeat(d.b, n)
+        push!(layers, Dense(W, b, d.σ))
+    end
+
+    # Rescale
+    ls, us = Float32.(ls), Float32.(us)
+    W = diagm((us - ls) / 2)
+    b = (us + ls) / 2
+    push!(layers, Dense(W, b))
+
+    return Chain(layers...)
+end
+
+"""
+Construct layer that computes mean of previous layer.
+"""
+function mean_layer(sz::Int64)
+    W = Float32.(ones(1, sz) / sz)
+    b = zeros(Float32, 1)
+    σ = NeuralVerification.Id()
+    return Layer(W, b, σ)
+end
+
+"""
+Construct layer that computes elementwise absolute value of previous layer.
+"""
+function abs_layers(sz::Int64)
+    M = Matrix{Float32}(I, sz, sz)
+    W1 = vcat(M, -M)
+    b1 = zeros(Float32, 2 * sz)
+    σ1 = NeuralVerification.ReLU()
+
+    W2 = hcat(M, M)
+    b2 = zeros(Float32, sz)
+    σ2 = NeuralVerification.Id()
+
+    return (Layer(W1, b1, σ1), Layer(W2, b2, σ2))
+end
+
+"""
+Coalesce artificially constructed network, incorporating layers without activation functions
+into subsequent layers. Note that this is not guaranteed to reduce the number of parameters,
+only the number of layers.
+"""
+function coalesce(nnet::Network)
+    layers = []
+    W, b, stored = nothing, nothing, false
+    for l in nnet.layers
+        W = stored ? l.weights * W : l.weights
+        b = stored ? l.weights * b + l.bias : l.bias
+        stored = l.activation isa NeuralVerification.Id && l != nnet.layers[end]
+        stored || push!(layers, Layer(W, b, l.activation))
+    end
+    return Network(layers)
+end
+
+"""
 Convert policy from actor-critic object to neural network. Concatenation and squashing are
 represented by ReLU configurations.
 """
@@ -101,39 +216,26 @@ function policy_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
     # Dimensions and parameters
     n_obs = size(ac.pi.net.layers[1].weight, 2)
     n_act = size(ac.pi.mu_layer.weight, 1)
-    steps = zeros(n_obs)
     layers = []
 
-    # Adds duplication layer and step-up.
+    # Add duplication layer
     M = Matrix{Float32}(I, n_obs, n_obs)
     W = vcat(M, M)
     b = zeros(Float32, 2*n_obs)
-    b[1:n_obs] .+= Float32.(steps)
-    σ = func_translate(identity)
+    σ = NeuralVerification.Id()
     push!(layers, Layer(W, b, σ))
     step_up = length(layers)
 
-    # Adds policy net.
+    # Add policy net
     push!(layers, fpad.(ac.pi.net, n_obs)...)
     push!(layers, fpad(ac.pi.mu_layer, n_obs))
 
-    # Adds action squash and state step-down.
-    M = Matrix{Float32}(I, n_obs + n_act, n_obs + n_act)
-    W = vcat(M, M[end-n_act+1:end,:])
-    b = Float32.(vcat(zeros(n_obs), -act_mins, -act_maxs))
-    σ = func_translate(relu)
-    push!(layers, Layer(W, b, σ))
-
-    M = Matrix{Float32}(I, n_obs + n_act, n_obs + n_act)
-    W = hcat(M, -M[:,end-n_act+1:end])
-    b = Float32.(vcat(-steps, act_mins))
-    σ = func_translate(identity)
-    push!(layers, Layer(W, b, σ))
+    # Add action squash
+    squash = squash_model(act_mins, act_maxs)
+    push!(layers, fpad.(squash.layers, n_obs)...)
     step_down = length(layers)
 
-    # Creates extended network.
-    nnet = Network(layers)
-    return ExtendedNetwork(nnet=nnet, step_up=step_up, step_down=step_down)
+    return ExtendedNetwork(nnet=Network(layers), step_up=step_up, step_down=step_down)
 end
 
 """
@@ -149,14 +251,14 @@ function values_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
     n_qs = length(ac.qs)
     W = repeat(Matrix{Float32}(I, sz, sz), n_qs)
     b = zeros(Float32, n_qs*sz)
-    σ = func_translate(identity)
+    σ = NeuralVerification.Id()
     push!(layers, Layer(W, b, σ))
 
     # Concatenate critics
     for ls in zip((q -> q.q).(ac.qs)...)
         W = block_diag((l -> l.weight).(ls)...)
         b = vcat((l -> l.bias).(ls)...)
-        σ = func_translate(ls[1].σ)
+        σ = convert_f(ls[1].σ)
         push!(layers, Layer(W, b, σ))
     end
     return network
@@ -169,12 +271,8 @@ function mean_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vec
     network = values_network(ac; act_mins=act_mins, act_maxs=act_maxs)
     layers = network.nnet.layers
 
-    # Mean layer
     sz = length(layers[end].bias)
-    W = Float32.(ones(1, sz) / sz)
-    b = zeros(Float32, 1)
-    σ = func_translate(identity)
-    push!(layers, Layer(W, b, σ))
+    push!(layers, mean_layer(sz))
 
     # Compensation for reward shaping
     if s != 0.0
@@ -192,7 +290,7 @@ function mean_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::Vec
 
         W = [1.0f0 -Float32(s)]
         b = [0.0f0]
-        σ = func_translate(identity)
+        σ = NeuralVerification.Id()
         push!(layers, Layer(W, b, σ))
         network.scale = s
     end
@@ -214,66 +312,37 @@ function spread_network(ac::GlobalResult; act_mins::Vector{Float64}, act_maxs::V
     M2 = Float32.(ones(sz, sz) / sz)
     W = M1 - M2
     b = zeros(Float32, sz)
-    σ = func_translate(identity)
+    σ = NeuralVerification.Id()
     push!(layers, Layer(W, b, σ))
 
-    # Absolute value (two layer computation)
-    M = Matrix{Float32}(I, sz, sz)
-    W = vcat(M, -M)
-    b = zeros(Float32, 2 * sz)
-    σ = func_translate(relu)
-    push!(layers, Layer(W, b, σ))
-
-    W = hcat(M, M)
-    b = zeros(Float32, sz)
-    σ = func_translate(identity)
-    push!(layers, Layer(W, b, σ))
-
-    # Mean layer
-    W = Float32.(ones(1, sz) / sz)
-    b = zeros(Float32, 1)
-    σ = func_translate(identity)
-    push!(layers, Layer(W, b, σ))
-
+    push!(layers, abs_layers(sz)...)
+    push!(layers, mean_layer(sz))
     return network
 end
 
 """
     CrossSection
 
-Cross-section type defining simple mapping from reduced input space (:x1, :x2, ...) to
-network observation space.
+Cross-section type, defining linear mapping from reduced input space to network observation
+space. Input can be specified as explicit matrix and bias or as functional mapping.
 
 # Example
 ```
-CrossSection([:x1, -pi/2, :x2, pi/2, :x2])
+cs1 = CrossSection([1 -1; 0 1; 0 0], [0, 0, 5])
+cs2 = CrossSection((x1, x2) -> (x1, -pi/2, -x2, pi/2, x1 + x2))
 ```
 """
-CrossSection = Vector{Union{<:Real, Symbol}}
-
-"""
-    LinearCrossSection
-
-Linear cross-section type, defining more general mapping.
-
-# Example
-```
-LinearCrossSection([1 -1; 0 1; 0 0], [0, 0, 5])
-```
-"""
-mutable struct LinearCrossSection
+mutable struct CrossSection
     W::Matrix{<:Real}
     b::Vector{<:Real}
 end
 
-"""
-Parse variables and create cross-section linear mapping.
-"""
-function linearize(cs::CrossSection)
-    vars = sort(unique(filter(el -> el isa Symbol, cs)))
-    W = hcat(([el == var for el in cs] for var in vars)...)
-    b = [el isa Real ? el : 0.0 for el in cs]
-    return LinearCrossSection(W, b)
+function CrossSection(f::Function)
+    unit = (n, i) -> [Float64(i == j) for j in 1:n]
+    n = first(methods(f)).nargs - 1
+    b = collect(f(zeros(n)...))
+    W = reduce(hcat, collect(f(unit(n, i)...)) - b for i in 1:n)
+    return CrossSection(W, b)
 end
 
 """
@@ -282,27 +351,23 @@ end
 Produce cross-section of neural network to reduce input dimensionality.
 """
 function cross_section(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
-    return cross_section(network, linearize(cs), limits)
-end
-
-function cross_section(network::ExtendedNetwork, lcs::LinearCrossSection, limits::NTuple{2, Vector{Float64}})
     σ = NeuralVerification.Id()
-    layer = [Layer(Float32.(lcs.W), Float32.(lcs.b), σ)]
+    layer = [Layer(Float32.(cs.W), Float32.(cs.b), σ)]
 
-    # Determines necessary step.
+    # Determine necessary step
     min_obs = compute_output(Network(layer), limits[1])
     max_obs = compute_output(Network(layer), limits[2])
-    steps = -min.(min_obs, max_obs) # necessary for general cross-section
+    steps = -min.(min_obs, max_obs)
 
-    # Duplicates and steps network.
-    n_obs = length(lcs.b)
+    # Duplicate and step network
+    n_obs = length(cs.b)
     nnet = deepcopy(network.nnet)
     i1, i2 = network.step_up, network.step_down
     nnet.layers[i1].bias[1:n_obs] = Float32.(steps)
     nnet.layers[i2].bias[1:n_obs] = -Float32.(steps)
 
-    # Adds cross-section layer.
+    # Add cross-section layer
     prepend!(nnet.layers, layer)
 
-    return nnet
+    return coalesce(nnet)
 end

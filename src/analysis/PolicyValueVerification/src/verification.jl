@@ -1,4 +1,14 @@
 
+const TODO_COUNTER = Threads.Atomic{Int64}(0)
+const DONE_COUNTER = Threads.Atomic{Int64}(0)
+
+add_todo(n::Int64=1) = Threads.atomic_add!(TODO_COUNTER, n)
+
+function add_done(n::Int64=1)
+    Threads.atomic_add!(DONE_COUNTER, n)
+    Threads.atomic_sub!(TODO_COUNTER, n)
+end
+
 """
 Cell information pertaining to proof and processing status.
 """
@@ -8,6 +18,7 @@ Base.@kwdef mutable struct CellStatus
     hash::UInt64 = hash(0)
     member::Bool = false
     proven::Bool = false
+    pid::Int64 = 0
 end
 
 """
@@ -54,8 +65,7 @@ function needs_refinement(cell::Cell, r::AbstractRefinery)
     # Determines corresponding input set.
     l = cell.boundary.origin
     h = l + w
-    input = Hyperrectangle(low=convert(Vector{Float64}, l),
-                           high=convert(Vector{Float64}, h))
+    input = Hyperrectangle(low=convert(Vector{Float64}, l), high=convert(Vector{Float64}, h))
 
     # Attempts verification of condition.
     problem = Problem(r.network, input, r.output)
@@ -94,6 +104,8 @@ Recursively build miniminal k-d tree that defines volumes proven to satisfy give
 and its complement. This version is single-process.
 """
 function refine!(cell::Cell, r::AbstractRefinery)
+    add_todo()
+    yield()
     if needs_refinement(cell, r)
         split!(cell, child_data)
         for c in children(cell)
@@ -101,7 +113,8 @@ function refine!(cell::Cell, r::AbstractRefinery)
         end
         merge!(cell)
     end
-    return nothing
+    add_done()
+    yield()
 end
 
 """
@@ -145,9 +158,53 @@ end
 """
 Generate root from region limits.
 """
-function get_root(limits::NTuple{2, Vector{Float64}})
+function get_root(limits::NTuple{2, Vector{<:Real}})
     lows, highs = limits
     widths = highs - lows
     root = Cell(SVector(lows...), SVector(widths...), CellStatus())
     return root
+end
+
+"""
+Perform PVV analysis, using multiple processes if available.
+"""
+function analyze(r::AbstractRefinery, limits::Tuple{Vector, Vector}; progress::Bool=true, multiproc::Bool=true)
+    TODO_COUNTER[] = 1
+    tree = get_root(limits)
+
+    @sync begin
+        # Refinement process
+        @async begin
+            try
+                if nprocs() == 1 || !multiproc
+                    refine!(tree, r)
+                else
+                    refine_multiprocess!(tree, r)
+                end
+            finally
+                TODO_COUNTER[] = 0
+            end
+        end
+
+        # Progress meter
+        if progress
+            @async begin
+                p = ProgressUnknown("Cells awaiting processing:")
+                while TODO_COUNTER[] > 0
+                    ProgressMeter.update!(p, TODO_COUNTER[]; ignore_predictor=true)
+                    sleep(0.1)
+                end
+                ProgressMeter.update!(p, 0)
+                ProgressMeter.finish!(p)
+            end
+        end
+    end
+
+    try
+        print_metrics(tree)
+    catch
+        println("Unable to calculate metrics.")
+    end
+
+    return tree
 end

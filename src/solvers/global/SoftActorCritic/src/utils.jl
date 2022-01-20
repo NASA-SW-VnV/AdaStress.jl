@@ -17,9 +17,9 @@ function fn_to_t(fn::String)
 end
 
 """
-Save AC networks to specified directory, with optional maximum number of saves.
+Save model to specified directory, with optional maximum number of saves.
 """
-function checkpoint(ac::MLPActorCritic, save_dir::String, max_saved::Int)
+function checkpoint(model, save_dir::String, max_saved::Int)
 
     # Delete earliest save if maximum number is exceeded
     if max_saved > 0
@@ -33,7 +33,7 @@ function checkpoint(ac::MLPActorCritic, save_dir::String, max_saved::Int)
 
     # Save AC agent
     filename = joinpath(save_dir, dt_to_fn(now()))
-	@save filename ac
+	@save filename model
 end
 
 """
@@ -58,6 +58,11 @@ function update!(disp_tups::Vector{<:Tuple}, disp_vals::Vector{<:Real})
         push!(hist, val)
     end
 end
+
+"""
+Send data to device.
+"""
+dev(x) = HAS_GPU[] ? gpu(x) : x
 
 """
 Recursively transfer structure to CPU in-place.

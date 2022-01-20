@@ -1,0 +1,5 @@
+[deps]
+AdaStress = "f8632b6a-8763-4da0-bfaf-5f7707adef25"
+BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"

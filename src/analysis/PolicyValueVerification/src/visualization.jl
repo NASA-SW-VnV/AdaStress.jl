@@ -14,30 +14,35 @@ function vs(cell::Cell)
     return vx, vy
 end
 
+FILL_OPTIONS = [:none, :proof, :pid]
+
 """
-    visualize!([p], root::Cell; fill::Bool=false, tol::Float64=0.01)
+    visualize!([p], root::Cell; fill::Symbol=:none, tol::Float64=0.01)
 
 Visualize edges and/or shapes of cells. Optional first argument is a pre-existing plot.
 """
-function visualize!(p, root::Cell; fill::Bool=false, tol::Float64=0.01)
+function visualize!(p, root::Cell; fill::Symbol=:none, tol::Float64=0.01)
     # plot parameters
+    @assert fill in FILL_OPTIONS
     format = (alpha=1.0, lw=0.0, label=:none)
 
     # gray background
-    fill && plot!(p, shape(root); color=:gray, format...)
+    fill == :none || plot!(p, shape(root); color=:gray, format...)
 
     # iterate through leaves
     pr = Progress(num_leaves(root), 1)
     for leaf in allleaves(root)
         w = leaf.boundary.widths
         if minimum(w) >= tol
-            if fill
+            if fill == :none
+                plot!(p, vs(leaf)..., color=:black, lw=0.5, label=:none)
+            elseif fill == :proof
                 if leaf.data.proven
                     color = leaf.data.member ? :green : :red
                     plot!(p, shape(leaf); color=color, format...)
                 end
-            else
-                plot!(p, vs(leaf)..., color=:black, lw=0.5, label=:none)
+            elseif fill == :pid
+                plot!(p, shape(leaf); color=leaf.data.pid, format...)
             end
         end
         next!(pr)
@@ -45,19 +50,15 @@ function visualize!(p, root::Cell; fill::Bool=false, tol::Float64=0.01)
     return p
 end
 
+visualize(p, root::Cell; kwargs...) = visualize!(deepcopy(p), root; kwargs...)
 visualize(root::Cell; kwargs...) = visualize!(plot(), root; kwargs...)
 
 """
-    visualize(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
+    visualize(nnet::Network, limits::NTuple{2, Vector{Float64}})
 
 Visualize network cross-section.
 """
-function visualize(network::ExtendedNetwork, cs::CrossSection, limits::NTuple{2, Vector{Float64}})
-    return visualize(network, linearize(cs), limits)
-end
-
-function visualize(network::ExtendedNetwork, lcs::LinearCrossSection, limits::NTuple{2, Vector{Float64}})
-    nnet = cross_section(network, lcs, limits)
+function visualize(nnet::Network, limits::NTuple{2, Vector{Float64}})
     if size(nnet.layers[1].weights, 2) != 2
         error("Number of free variables must be 2.")
     end

@@ -4,29 +4,25 @@ neural networks.
 """
 module PolicyValueVerification
 
-__init__() = @eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
-
 export
     CrossSection,
-    LinearCrossSection,
     BinaryRefinery,
     IntervalRefinery,
 
-    coverage,
     cross_section,
     get_root,
     mean_network,
     spread_network,
-    num_leaves,
+    print_metrics,
     visualize,
     visualize!,
-    refine!,
-    refine_multiprocess!
+    analyze
 
 using AdaStress: GlobalResult
 
+using BSON
 using Distributed
-using Flux: Dense, relu
+using Flux
 using LazySets: HalfSpace
 using LinearAlgebra
 using NeuralVerification
@@ -46,7 +42,8 @@ include("multiprocessing.jl")
 include("analysis.jl")
 include("visualization.jl")
 
-const jobs = RemoteChannel(()->Channel{Cell}(1000000));
-const results = RemoteChannel(()->Channel{Cell}(1000000));
+function __init__()
+    @eval NeuralVerification σ = LazySets.σ # fixes Requires bug in NeuralVerification
+end
 
 end

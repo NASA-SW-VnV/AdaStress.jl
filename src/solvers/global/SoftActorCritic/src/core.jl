@@ -10,7 +10,7 @@ function mlp(sizes::Vector{Int}, activation::Function, output_activation::Functi
         act = j < length(sizes) - 1 ? activation : output_activation
         push!(layers, Dense(sizes[j], sizes[j + 1], act))
     end
-    return Chain(layers...) |> gpu
+    return Chain(layers...) |> dev
 end
 
 """
@@ -37,11 +37,11 @@ function SquashedGaussianMLPActor(
 	rng::AbstractRNG,
     linearized::Bool
 )
-    net = mlp(vcat(obs_dim, hidden_sizes), activation, activation) |> gpu
-    mu_layer = Dense(hidden_sizes[end], act_dim) |> gpu
-    log_std_layer = Dense(hidden_sizes[end], act_dim) |> gpu
-    act_mins, act_maxs = gpu(Float32.(act_mins)), gpu(Float32.(act_maxs))
-    if WITH_GPU
+    net = mlp(vcat(obs_dim, hidden_sizes), activation, activation) |> dev
+    mu_layer = Dense(hidden_sizes[end], act_dim) |> dev
+    log_std_layer = Dense(hidden_sizes[end], act_dim) |> dev
+    act_mins, act_maxs = dev(Float32.(act_mins)), dev(Float32.(act_maxs))
+    if HAS_GPU[]
         rng_gpu = CURAND.RNG()
         seed = rand(rng, UInt32)
         Random.seed!(rng_gpu, seed)
@@ -105,13 +105,9 @@ function (pi::SquashedGaussianMLPActor)(
         logp_pi = NaN
     end
 
-    # Linearized "squashing" (allows downstream analysis of learned networks).
-    # Note that log probability corresponds to original non-linear squashing.
-    # This enables learning to continue with only minor degredation.
-    if pi.linearized
+    if pi.linearized # probabilities still correspond to non-linear squashing
         pi_action = clamp.(pi_action, pi.act_mins, pi.act_maxs)
     else
-        # Original non-linear squashing
         pi_action = tanh.(pi_action)
         pi_action = @. pi.act_mins + (pi.act_maxs - pi.act_mins) * (pi_action / 2 + 0.5f0)
     end
@@ -157,9 +153,9 @@ function MLPActorCritic(
 	num_q::Int=2,
 	activation::Function=SoftActorCritic.relu,
 	rng::AbstractRNG=Random.GLOBAL_RNG,
-    linearize::Bool=true
+    linearized::Bool=false
 )
-    pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_mins, act_maxs, rng, linearize)
+    pi = SquashedGaussianMLPActor(obs_dim, act_dim, hidden_sizes, activation, act_mins, act_maxs, rng, linearized)
     qs = [MLPQFunction(obs_dim, act_dim, hidden_sizes, activation) for _ in 1:num_q]
     return MLPActorCritic(pi, qs)
 end
