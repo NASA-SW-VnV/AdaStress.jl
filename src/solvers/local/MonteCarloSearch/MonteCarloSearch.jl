@@ -25,9 +25,18 @@ Base.@kwdef mutable struct MCS <: LocalSolver
     top_k::Int64          = 10
 end
 
+"""
+    MCSResult <: LocalResult
+
+Monte Carlo search result.
+"""
+mutable struct MCSResult <: LocalResult
+    path::Vector
+end
+
 function Solvers.solve(mcs::MCS, env_fn::Function)
     mdp = env_fn()
-    A = typeof(rand(actions(env_fn())))
+    A = typeof(rand(actions(mdp)))
     best_paths = PriorityQueue()
 
     @showprogress for _ in 1:mcs.num_iterations
@@ -40,7 +49,7 @@ function Solvers.solve(mcs::MCS, env_fn::Function)
             a = rand(actions(mdp))
             push!(path, a)
             r += act!(mdp, a)
-            d && enqueue!(best_paths, path, r, mcs.top_k)
+            d && enqueue!(best_paths, MCSResult(path), r, mcs.top_k)
         end
     end
 

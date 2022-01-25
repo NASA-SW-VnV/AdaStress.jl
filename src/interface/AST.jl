@@ -98,7 +98,7 @@ function ASTMDP(sim::AbstractSimulation; kwargs...)
     env_info = sim isa BlackBox ? EnvironmentInfo() : infer_info(environment(sim))
     mdp = ASTMDP{infer_state(sim), act_type}(; sim=sim, kwargs..., env_info=env_info)
     mdp.reward.heuristic = mdp.episodic ? FinalHeuristic() : mdp.reward.heuristic
-    global RNG_TEMP = deepcopy(mdp.rng)
+    RNG_TEMP[] = mdp.rng == Random.default_rng() ? Random.Xoshiro() : deepcopy(mdp.rng)
     return mdp
 end
 

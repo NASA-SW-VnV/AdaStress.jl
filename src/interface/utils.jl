@@ -1,5 +1,5 @@
 
-RNG_TEMP = deepcopy(Random.default_rng()) # temporary storage for RNG of same type as global
+RNG_TEMP = Ref{AbstractRNG}() # temporary storage for RNG
 
 """
 Conditional function. Applies function if applicable, otherwise returns value. Useful for
