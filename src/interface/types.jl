@@ -22,6 +22,8 @@ Samples from environment.
 """
 const EnvironmentValue = Dict{Symbol, Any}
 
+Base.zero(val::EnvironmentValue) = EnvironmentValue(k => zero(v) for (k, v) in val)
+
 """
 Inferred properties of single environment variable.
 """
