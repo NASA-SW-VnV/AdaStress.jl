@@ -41,7 +41,7 @@ function SquashedGaussianMLPActor(
     mu_layer = Dense(hidden_sizes[end], act_dim) |> dev
     log_std_layer = Dense(hidden_sizes[end], act_dim) |> dev
     act_mins, act_maxs = dev(Float32.(act_mins)), dev(Float32.(act_maxs))
-    if HAS_GPU[]
+    if WITH_GPU[]
         rng_gpu = CURAND.RNG()
         seed = rand(rng, UInt32)
         Random.seed!(rng_gpu, seed)

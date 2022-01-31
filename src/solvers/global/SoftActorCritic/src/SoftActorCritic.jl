@@ -29,7 +29,7 @@ using Random
 using Statistics
 using Zygote
 
-const HAS_GPU = Ref(has_cuda_gpu())
+const WITH_GPU = Ref(has_cuda_gpu())
 const DEFAULT_SAVE_DIR = joinpath(@__DIR__, "checkpoints")
 
 include("utils.jl")

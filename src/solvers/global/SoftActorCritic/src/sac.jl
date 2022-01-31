@@ -199,6 +199,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     polyak::Float64 = 0.995                         # target network averaging parameter
     target_entropy::Float64 = -act_dim              # target entropy (default is heuristic)
     rng::AbstractRNG = Random.GLOBAL_RNG            # random number generator
+    use_gpu::Bool = true                            # use GPU if available
 
     # Testing
     num_test_episodes::Int = 100                    # number of test episodes
@@ -218,6 +219,8 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     # Initialize AC agent and auxiliary data structures
     env = env_fn()
     test_env = env_fn()
+
+    set_gpu_status(sac.use_gpu)
     ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
         sac.hidden_sizes, sac.num_q, sac.activation, sac.rng, sac.linearized)
     ac_targ = deepcopy(ac)

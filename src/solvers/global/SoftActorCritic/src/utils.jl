@@ -60,9 +60,16 @@ function update!(disp_tups::Vector{<:Tuple}, disp_vals::Vector{<:Real})
 end
 
 """
+Set GPU status based on device availability and user preference.
+"""
+function set_gpu_status(use_gpu::Bool)
+    WITH_GPU[] = has_cuda_gpu() && use_gpu
+end
+
+"""
 Send data to device.
 """
-dev(x) = HAS_GPU[] ? gpu(x) : x
+dev(x) = WITH_GPU[] ? gpu(x) : x
 
 """
 Recursively transfer structure to CPU in-place.
