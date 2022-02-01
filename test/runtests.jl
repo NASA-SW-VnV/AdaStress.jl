@@ -56,7 +56,7 @@ end
     end
 end
 
-# Example notebooks to be tested
+# Example notebooks to be tested (cells beginning with `# autoskip` are not executed)
 envs = ["walk1d", "walk2d", "pvv"]
 
 for env in envs
@@ -64,7 +64,7 @@ for env in envs
         dir = joinpath(@__DIR__, "..", "examples", env)
         cd(dir) do
             @test begin
-                @nbinclude(joinpath(dir, "$env.ipynb"))
+                @nbinclude(joinpath(dir, "$env.ipynb"); regex=r"^(?!# autoskip).*")
                 true
             end
         end
