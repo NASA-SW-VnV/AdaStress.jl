@@ -1,5 +1,6 @@
 [deps]
 AdaStress = "f8632b6a-8763-4da0-bfaf-5f7707adef25"
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
+Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 Flux = "587475ba-b771-5e3f-ad9e-33799f191a9c"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
