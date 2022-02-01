@@ -1,7 +1,6 @@
-# AdaStress
------------
+![AdaStress](logo.svg)
 
-This package implements the Adaptive Stress Testing (AST) framework, which determines the likeliest failures for a system under test.
+AdaStress implements the Adaptive Stress Testing (AST) framework, which determines the likeliest failures for a system under test.
 
 The package provides three primary services:
 - Interfaces between user simulations and the AST framework
