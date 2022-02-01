@@ -27,14 +27,14 @@ end
 end
 
 # Example notebooks to be tested
-envs = ["walk1d", "walk2d", "pvv"]
+envs = ["pvv"] # ["walk1d", "walk2d", "pvv"]
 
 for env in envs
     @testset "Example: $env" begin
         dir = joinpath(@__DIR__, "..", "examples", env)
         cd(dir) do
             @test begin
-                @nbinclude(joinpath(dir, "$env.ipynb"); regex=r"^(?!# autoskip).*$")
+                @nbinclude(joinpath(dir, "$env.ipynb")) # regex=r"^(?!# autoskip).*$"
                 true
             end
         end
