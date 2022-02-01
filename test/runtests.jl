@@ -34,7 +34,7 @@ for env in envs
         dir = joinpath(@__DIR__, "..", "examples", env)
         cd(dir) do
             @test begin
-                @nbinclude(joinpath(dir, "$env.ipynb"))
+                @nbinclude(joinpath(dir, "$env.ipynb"); regex=r"^(?!# autoskip).*$")
                 true
             end
         end
