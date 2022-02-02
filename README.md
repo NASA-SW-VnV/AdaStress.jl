@@ -1,4 +1,4 @@
-![AdaStress](logo.svg)
+![AdaStress](docs/logo.svg)
 
 AdaStress is a software package that implements the Adaptive Stress Testing (AST) framework, which determines the likeliest failures for a system under test.
 

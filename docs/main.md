@@ -1,4 +1,4 @@
-![AdaStress](../logo.svg)
+![AdaStress](logo.svg)
 
 # Documentation
 
