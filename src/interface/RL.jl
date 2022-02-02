@@ -30,10 +30,10 @@ function evaluate!(mdp::ASTMDP{<:State, A}, a::A) where A <: SampleAction
 end
 
 function evaluate!(mdp::ASTMDP{<:State, A}, a::A) where A <: SeedAction
-    copy!(RNG_TEMP, mdp.rng)
+    copy!(RNG_TEMP[], mdp.rng)
     Random.seed!(mdp.rng, a.seed)
     logp = step!(mdp.rng, mdp.sim)
-    copy!(mdp.rng, RNG_TEMP)
+    copy!(mdp.rng, RNG_TEMP[])
     return logp
 end
 

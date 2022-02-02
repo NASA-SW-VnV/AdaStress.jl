@@ -13,6 +13,15 @@ Base.@kwdef mutable struct MCTS <: LocalSolver
 end
 
 """
+    MCTSResult <: LocalResult
+
+Monte Carlo tree search result.
+"""
+mutable struct MCTSResult <: LocalResult
+    path::Vector
+end
+
+"""
 Roll out random policy from given state, returning total return and final state.
 """
 function rollout(mdp::CommonRLInterface.AbstractEnv, s::Node)
@@ -69,7 +78,7 @@ function Solvers.solve(mcts::MCTS, env_fn::Function)
         reset!(mdp)
         r, s = simulate(mcts, mdp)
         path = trace(s)
-        enqueue!(best_paths, path, r, mcts.top_k)
+        enqueue!(best_paths, MCTSResult(path), r, mcts.top_k)
     end
 
     return best_paths

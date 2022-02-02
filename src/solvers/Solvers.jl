@@ -3,12 +3,13 @@ Solvers module. Provides algorithms for solving AST MDPs.
 """
 module Solvers
 
-using AdaStress: exclude
+using AdaStress: exclude, Interface
 using DataStructures
 import DataStructures: enqueue!
 
 export
     solve,
+    replay!,
 
     GlobalSolver,
     LocalSolver,

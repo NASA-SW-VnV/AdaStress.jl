@@ -107,7 +107,7 @@ function ASTMDP(sim::AbstractSimulation; kwargs...)
     end
 
     mdp.reward.heuristic = mdp.episodic ? FinalHeuristic() : mdp.reward.heuristic
-    global RNG_TEMP = deepcopy(mdp.rng)
+    RNG_TEMP[] = mdp.rng == Random.default_rng() ? Random.Xoshiro() : deepcopy(mdp.rng)
     return mdp
 end
 
