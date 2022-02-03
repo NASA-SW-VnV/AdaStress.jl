@@ -26,9 +26,17 @@ end
     end
 end
 
-test_envs = []
-for env in test_envs
+# Example notebooks to be tested (cells beginning with `# autoskip` are not executed)
+envs = ["walk1d", "walk2d", "pvv"]
+
+for env in envs
     @testset "Example: $env" begin
-        @test @nbinclude("$env.ipynb")
+        dir = joinpath(@__DIR__, "..", "examples", env)
+        cd(dir) do
+            @test begin
+                @nbinclude(joinpath(dir, "$env.ipynb"); regex=r"^(?!# autoskip).*")
+                true
+            end
+        end
     end
 end

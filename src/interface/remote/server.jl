@@ -77,9 +77,10 @@ _echo(::ASTMDP, x) = x
 Respond to information request from ASTClient.
 """
 function _info(mdp::ASTMDP{S, A}) where {S, A}
+    format = t -> Symbol(last(split("$t", ".")))
     Dict(
-        :S => Symbol("$S"),
-        :A => Symbol("$A"),
+        :S => format(S),
+        :A => format(A),
         :episodic => mdp.episodic,
         :num_steps => mdp.num_steps
     )
