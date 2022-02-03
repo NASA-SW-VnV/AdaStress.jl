@@ -1,6 +1,6 @@
-# AdaStress
+![AdaStress](docs/logo.svg)
 
-This package implements the Adaptive Stress Testing (AST) framework, which determines the likeliest failures for a system under test.
+AdaStress is a software package that implements the Adaptive Stress Testing (AST) framework, which determines the likeliest failures for a system under test.
 
 AdaStress provides three primary services:
 - Interfaces between user simulations and the AST framework
@@ -35,6 +35,9 @@ Your simulation must inherit from the `BlackBox` or `GrayBox` type and implement
 For more detailed instructions on using AdaStress, see the [complete documentation](./docs/main.md). Example notebooks can be found in the `examples` directory. For background on original AST formulation, see
 > Lee, Ritchie, Ole J. Mengshoel, Anshu Saksena, Ryan W. Gardner, Daniel Genin, Joshua Silbermann, Michael Owen, and Mykel J. Kochenderfer. "Adaptive stress testing: Finding likely failure events with reinforcement learning." Journal of Artificial Intelligence Research 69 (2020): 1165-1201.
 
+## License
+AdaStress has been released under the NASA Open Source Agreement version 1.3, as detailed [here](LICENSE.pdf).
+
 ## Maintainers
 - Rory Lipkis (`rory.lipkis@nasa.gov`)
-- Ritchie Lee (`ritchie.lee@nasa.gov`)
+- Adrian Agogino (`adrian.k.agogino@nasa.gov`)

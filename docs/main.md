@@ -1,12 +1,14 @@
-# AdaStress
+![AdaStress](logo.svg)
+
+# Documentation
 
 ## Maintainers
-- Ritchie Lee (`ritchie.lee@nasa.gov`)
 - Rory Lipkis (`rory.lipkis@nasa.gov`)
+- Adrian Agogino (`adrian.k.agogino@nasa.gov`)
 
 ## Description
 
-This package implements the [Adaptive Stress Testing (AST) framework](https://doi.org/10.1613/jair.1.12190), which determines the likeliest failures for a system under test.
+AdaStress is a software package that implements the [Adaptive Stress Testing (AST) framework](https://doi.org/10.1613/jair.1.12190), which determines the likeliest failures for a system under test.
 
 AdaStress provides three primary services:
 - Interfaces between user simulations and the AST framework
@@ -140,7 +142,7 @@ Different distance heuristics can also be set, depending on the problem:
 
 Another parameter of the `ASTMDP` is the Boolean value `episodic`, which defaults to `false`. Episodic problems constitute a relatively rare case in which the condition of failure and the distance to failure can only be evaluated after a set number of steps. In this case, the simulation interface changes slightly: `isevent` should check whether failure occurred at any point during the episode and `distance` should return the minimum distance to failure seen across the entire episode (i.e., the "miss distance"). This may require additional simulation-side bookkeeping.
 
-For an example of an episodic problem, see the notebook in `examples/fms`.
+For an example of an episodic problem, see the notebook `examples/fms`.
 
 ## Serialization interface
 
@@ -230,7 +232,7 @@ Monte Carlo tree search (MCTS) is a reinforcement learning algorithm that attemp
 | `α` | `Float64` | `0.7` | Tree expansion exponent |
 | `c` | `Float64` | `1.0` | Exploration balance coefficient |
 
-For an example of a problem solved with MCTS, see the notebook in `examples/walk1d`.
+For an example of a problem solved with MCTS, see the notebook `examples/walk1d`.
 
 ### Global solvers
 
@@ -274,7 +276,7 @@ Soft actor critic (SAC) is a deep reinforcement learning algorithm that simultan
 | `save_dir` | `String` | `DEFAULT_SAVE_DIR` | Directory to save checkpoints | 
 | `max_saved` | `Int64` | `0` | Maximum number of checkpoints; set to zero or negative for unlimited | 
 
-For an example of a problem solved with MCTS, see the notebook in `examples/walk1d`. 
+For an example of a problem solved with MCTS, see the notebook `examples/walk1d`. 
 
 ## Analysis
 
@@ -286,10 +288,9 @@ Analysis modules provide methods to further analyze results.
 
 Policy-value verification (PVV) is an experimental method of analyzing the output of global solvers. It assembles the policy network and value network (or ensemble of value networks) into a single value function over state space. Then, given a set condition on the value function, the algorithm uses an adaptive refinement process to classify regions of state space that provably satisfy the condition, violate the condition, or are unprovable at the given tolerance.
 
-As a matter of ongoing research, requirements concerning the safety of the system can be linked to conditions on the value function. For instance, a requirement that the possibility of failure not exceed $10^{-9}$ from a set of initial states (given some modeled environmental stochasticity) translates to a constraint on the value function. The validity and practicality of this analysis is largely dependent on the learning process and is still uncertain. Nonetheless, the approach currently can generate *approximate* artifacts that can be useful for casual and unrigorous analysis of system performance. 
+As a matter of ongoing research, requirements concerning the safety of the system can be linked to conditions on the value function. For instance, a requirement that the possibility of failure not exceed $10^{-9}$ from a set of initial states (given some modeled environmental stochasticity) translates to a constraint on the value function. The validity and practicality of this analysis is largely dependent on the learning process and is still uncertain. Nonetheless, the approach can currently generate *approximate* artifacts that may be useful for casual and nonrigorous analysis of system performance. 
 
-To use PVV, a global result object is passed into the `mean_network` or `spread_network` functions to generate composite neural networks representing statistics of the learned value ensemble. A `CrossSection` or `LinearCrossSection` can be defined to reduce the dimensionality of the input space for the purposes of visualization and reduced computational burden. Finally, a `BinaryRefinery` or `IntervalRefinery` object is created to specify the condition imposed on the value function. The functions `refine!` and `refine_multiprocess!` initiate the analysis algorithm. 
+To use PVV, a global result object is passed into the `mean_network` or `spread_network` functions to generate composite neural networks representing statistics of the learned value ensemble. A `CrossSection` or `LinearCrossSection` can be defined to reduce the dimensionality of the input space for the purposes of visualization and reduced computational burden. Finally, a `BinaryRefinery` or `IntervalRefinery` object is created to specify the condition imposed on the value function. The function `analyze` initiates the analysis algorithm. 
 
-For an example of a problem analyzed with PVV, see the notebook in `examples/walk2d`. 
-
+For an example of a problem analyzed with PVV, see the notebooks `examples/walk2d` and `examples/pvv`. 
 
