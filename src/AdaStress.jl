@@ -44,6 +44,8 @@ using .Solvers
 using .Analysis
 
 export Interface
+export Solvers
+export Analysis
 
 function __init__()
     init_submodules()

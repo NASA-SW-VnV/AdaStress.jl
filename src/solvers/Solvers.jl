@@ -48,7 +48,10 @@ export
 
     SoftActorCritic,
     MonteCarloSearch,
-    MonteCarloTreeSearch
+    MonteCarloTreeSearch,
+
+    RandomPolicy,
+    NullPolicy
 
 include("types.jl")
 include("utils.jl")
