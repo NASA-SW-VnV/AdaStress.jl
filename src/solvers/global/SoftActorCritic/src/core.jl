@@ -120,7 +120,7 @@ function (pi::SquashedGaussianMLPActor)(
     if deterministic
         pi_action = mu
     else
-        if mu isa CuArray
+        if WITH_GPU[]
             z = normal_deviates(pi.rng_gpu, size(mu))
         else
             z = randn(pi.rng, Float32, size(mu))
@@ -181,7 +181,7 @@ function MLPActorCritic(
 	act_maxs::Vector{Float64},
 	hidden_sizes::Vector{Int}=[100,100,100],
 	num_q::Int=2,
-	activation::Function=SoftActorCritic.relu,
+	activation::Function=relu,
 	rng::AbstractRNG=Random.GLOBAL_RNG,
     linearized::Bool=false
 )
@@ -202,8 +202,3 @@ end
 Define native softplus function to avoid CUDA bugs. #TODO: removable?
 """
 softplus(x::Real) = x > 0 ? x + log(1 + exp(-x)) : log(1 + exp(x))
-
-"""
-Define native relu function to avoid Flux bugs. #TODO: removable?
-"""
-relu(x::Real) = max(x, 0)

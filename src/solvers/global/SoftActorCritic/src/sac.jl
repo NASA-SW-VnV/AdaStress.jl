@@ -209,9 +209,10 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
   		obs_dim, act_dim, max_buffer_size)
 
     # Actor-critic network
+    ac::Union{MLPActorCritic, Nothing} = nothing    # actor-critic object
     hidden_sizes::Vector{Int} = [100,100,100]       # dimensions of any hidden layers
     num_q::Int = 2                                  # size of critic ensemble
-    activation::Function = SoftActorCritic.relu     # activation after each hidden layer
+    activation::Function = relu                     # activation after each hidden layer
     linearized::Bool = false                        # linearized policy squashing
 
     # Training
@@ -233,9 +234,10 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
 
     # Testing
     num_test_episodes::Int = 100                    # number of test episodes
-    displays::Vector{<:Tuple} = Tuple[]             # display values (list of tuples of
+    displays::Vector{Tuple} = Tuple[]               # display values (list of tuples of
                                                     # name and function to apply to MDP
                                                     # after each trajectory)
+    info::Dict{String, Any} = Dict{String, Any}()   # accumulated stats
 
     # Checkpointing
     save::Bool = false                              # to enable checkpointing
@@ -251,8 +253,11 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     test_env = env_fn()
 
     set_gpu_status(sac.use_gpu)
-    ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
-        sac.hidden_sizes, sac.num_q, sac.activation, sac.rng, sac.linearized)
+    if sac.ac === nothing
+        sac.ac = MLPActorCritic(sac.obs_dim, sac.act_dim, sac.act_mins, sac.act_maxs,
+            sac.hidden_sizes, sac.num_q, sac.activation, sac.rng, sac.linearized)
+    end
+    ac = sac.ac
     ac_targ = deepcopy(ac)
     ac_cpu = to_cpu(ac)
     alpha = [1.0f0] |> dev
@@ -330,11 +335,16 @@ function Solvers.solve(sac::SAC, env_fn::Function)
         ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disp_tups))
     end
 
-    # Save display values and replay buffer
-    info = Dict{String, Any}()
+    # Save display values
     for (sym, hist) in disp_tups
-        info[String(sym)] = hist
+        k = String(sym)
+        if k in keys(sac.info)
+            append!(sac.info[k], hist)
+        else
+            sac.info[k] = hist
+        end
     end
 
-    return ac_cpu, info
+    ac_cpu.pi.rng_gpu = nothing
+    return ac_cpu, sac.info
 end
