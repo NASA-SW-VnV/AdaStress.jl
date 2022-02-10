@@ -36,7 +36,7 @@ function compute_loss_q(
 	ac_targ::MLPActorCritic,
 	data::NamedTuple,
 	gamma::Float64,
-	alpha::AbstractVector{Float32};
+	alpha;
     average::Bool = true
 )
 	o, a, r, o2, d = data
@@ -60,7 +60,7 @@ Compute loss for current policy.
 function compute_loss_pi(
     ac::MLPActorCritic,
     data::NamedTuple,
-    alpha::AbstractVector{Float32};
+    alpha;
     average::Bool = true
 )
     o = data.obs
@@ -76,7 +76,7 @@ end
 """
 Compute loss for current alpha.
 """
-function compute_loss_alpha(ac::MLPActorCritic, data::NamedTuple, alpha::AbstractVector{Float32}, target_entropy::Float64)
+function compute_loss_alpha(ac::MLPActorCritic, data::NamedTuple, alpha, target_entropy::Float64)
     o = data.obs
     _, logp_pi = ac.pi(o)
     loss_alpha = mean(-1.0f0 .* alpha .* (logp_pi .+ Float32(target_entropy)))
@@ -141,7 +141,6 @@ end
 
 """
 Test current policy and generate display statistics.
-TODO: Statistics can be gathered more efficiently from existing rollouts.
 """
 function test_agent(
     ac::MLPActorCritic,
@@ -212,7 +211,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
     ac::Union{MLPActorCritic, Nothing} = nothing    # actor-critic object
     hidden_sizes::Vector{Int} = [100,100,100]       # dimensions of any hidden layers
     num_q::Int = 2                                  # size of critic ensemble
-    activation::Function = relu                     # activation after each hidden layer
+    activation::Function = SoftActorCritic.relu     # activation after each hidden layer
     linearized::Bool = false                        # linearized policy squashing
 
     # Training
@@ -250,6 +249,7 @@ end
 function Solvers.solve(sac::SAC, env_fn::Function)
     # Initialize AC agent and auxiliary data structures
     env = env_fn()
+    env.flatten = true # TODO: infer automatically
     test_env = env_fn()
 
     set_gpu_status(sac.use_gpu)
@@ -275,7 +275,7 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     for t in 1:total_steps
         # Choose action
     	random_policy = t <= sac.start_steps
-    	a = random_policy ? rand(actions(env); flat=true) : ac_cpu(o)
+    	a = random_policy ? rand(actions(env)) : ac_cpu(o)
 
         # Step environment
         d = terminated(env)

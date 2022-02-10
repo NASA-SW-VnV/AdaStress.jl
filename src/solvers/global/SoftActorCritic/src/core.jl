@@ -84,7 +84,7 @@ end
 """
 Calculate log pdf of normal distribution.
 """
-function normal_logpdf(μ::AbstractMatrix{Float32}, σ::AbstractMatrix{Float32}, x::AbstractMatrix{Float32})
+function normal_logpdf(μ, σ, x)
     lz = sum(-0.5f0 .* ((x .- μ) ./ σ).^2; dims=1)
     lden = (size(μ, 1) * Float32(log(2π)) / 2) .+ sum(log.(σ); dims=1)
     lpdf = lz .- lden
@@ -105,11 +105,7 @@ Zygote.@nograd normal_deviates
 """
 Retrieve action (and optional log probability) from policy.
 """
-function (pi::SquashedGaussianMLPActor)(
-			obs::AbstractArray{Float32},
-			deterministic::Bool=false,
-			with_logprob::Bool=true
-)
+function (pi::SquashedGaussianMLPActor)(obs, deterministic::Bool=false, with_logprob::Bool=true)
     net_out = pi.net(obs)
     mu = pi.mu_layer(net_out)
     log_std = pi.log_std_layer(net_out)
@@ -120,7 +116,7 @@ function (pi::SquashedGaussianMLPActor)(
     if deterministic
         pi_action = mu
     else
-        if WITH_GPU[]
+        if obs isa CuArray
             z = normal_deviates(pi.rng_gpu, size(mu))
         else
             z = randn(pi.rng, Float32, size(mu))
@@ -160,7 +156,7 @@ end
 """
 Determine Q-value of observation and action.
 """
-function (qf::MLPQFunction)(obs::AbstractMatrix{Float32}, act::AbstractMatrix{Float32})
+function (qf::MLPQFunction)(obs, act)
     q = qf.q(cat(obs, act; dims=1))
     q = dropdims(q; dims=1)
     return q
@@ -181,7 +177,7 @@ function MLPActorCritic(
 	act_maxs::Vector{Float64},
 	hidden_sizes::Vector{Int}=[100,100,100],
 	num_q::Int=2,
-	activation::Function=relu,
+	activation::Function=SoftActorCritic.relu,
 	rng::AbstractRNG=Random.GLOBAL_RNG,
     linearized::Bool=false
 )
@@ -193,7 +189,7 @@ end
 """
 Retrieve action from policy.
 """
-function (ac::MLPActorCritic)(obs::AbstractVector{Float32}, deterministic::Bool=true)
+function (ac::MLPActorCritic)(obs, deterministic::Bool=true)
     a, _ = ac.pi(obs, deterministic, false)
     return a
 end
@@ -201,4 +197,9 @@ end
 """
 Define native softplus function to avoid CUDA bugs. #TODO: removable?
 """
-softplus(x::Real) = x > 0 ? x + log(1 + exp(-x)) : log(1 + exp(x))
+softplus(x) = x > 0 ? x + log(oftype(x, 1) + exp(-x)) : log(oftype(x, 1) + exp(x))
+
+"""
+Define native relu function to avoid Flux bugs.
+"""
+relu(x) = max(x, oftype(x, 0))
