@@ -36,7 +36,7 @@ For more detailed instructions on using AdaStress, see the [complete documentati
 > Lee, Ritchie, Ole J. Mengshoel, Anshu Saksena, Ryan W. Gardner, Daniel Genin, Joshua Silbermann, Michael Owen, and Mykel J. Kochenderfer. "Adaptive stress testing: Finding likely failure events with reinforcement learning." Journal of Artificial Intelligence Research 69 (2020): 1165-1201.
 
 ## License
-AdaStress has been released under the NASA Open Source Agreement version 1.3, as detailed [here](LICENSE.pdf).
+AdaStress has been released under the NASA Open Source Agreement version 1.3, as detailed [here](docs/LICENSE.pdf).
 
 ## Maintainers
 - Rory Lipkis (`rory.lipkis@nasa.gov`)
