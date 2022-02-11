@@ -1,7 +1,7 @@
 # ******************************************************************************************
 # Notices:
 #
-# Copyright © 2021 United States Government as represented by the Administrator of the
+# Copyright © 2022 United States Government as represented by the Administrator of the
 # National Aeronautics and Space Administration.  All Rights Reserved.
 #
 # Disclaimers
@@ -53,6 +53,13 @@ Samples from environment.
 const EnvironmentValue = Dict{Symbol, Any}
 
 Base.zero(val::EnvironmentValue) = EnvironmentValue(k => zero(v) for (k, v) in val)
+
+"""
+Environment that will be flattened upon sampling.
+"""
+mutable struct Flat
+    env::Environment
+end
 
 """
 Inferred properties of single environment variable.
@@ -123,7 +130,6 @@ abstract type AbstractReward end
 
 """
 Standard MDP object for AST. Wraps simulation and contains auxiliary information and parameters.
-#TODO: add hooks for annealing.
 """
 Base.@kwdef mutable struct ASTMDP{S<:State, A<:Action} <: AbstractASTMDP{S, A}
 	sim::AbstractSimulation						      # simulation wrapping system under test
@@ -131,5 +137,6 @@ Base.@kwdef mutable struct ASTMDP{S<:State, A<:Action} <: AbstractASTMDP{S, A}
     episodic::Bool            = false                 # episodic evaluation
     num_steps::Int64          = 0                     # number of steps (zero if unknown)
 	env_info::EnvironmentInfo = EnvironmentInfo()	  # inferred environment properties
+    flatten::Bool             = false                 # whether environment is flattened
     rng::AbstractRNG          = Random.default_rng()  # RNG used for simulation
 end

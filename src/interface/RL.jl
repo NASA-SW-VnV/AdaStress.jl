@@ -1,7 +1,7 @@
 # ******************************************************************************************
 # Notices:
 #
-# Copyright © 2021 United States Government as represented by the Administrator of the
+# Copyright © 2022 United States Government as represented by the Administrator of the
 # National Aeronautics and Space Administration.  All Rights Reserved.
 #
 # Disclaimers
@@ -38,9 +38,13 @@ function reset!(mdp::ASTMDP)
 end
 
 """
-Return set of available actions as sampleable object.
+Return set of available actions as sampleable object. # TODO: not type-stable.
 """
-actions(mdp::ASTMDP{<:State, SampleAction}) = environment(mdp.sim)
+function actions(mdp::ASTMDP{<:State, SampleAction})
+    env = environment(mdp.sim)
+    return mdp.flatten ? Flat(env) : env
+end
+
 actions(::ASTMDP{<:State, SeedAction}) = UInt32
 
 """

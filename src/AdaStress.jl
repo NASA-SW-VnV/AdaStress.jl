@@ -1,7 +1,7 @@
 # ******************************************************************************************
 # Notices:
 #
-# Copyright © 2021 United States Government as represented by the Administrator of the
+# Copyright © 2022 United States Government as represented by the Administrator of the
 # National Aeronautics and Space Administration.  All Rights Reserved.
 #
 # Disclaimers
@@ -44,6 +44,8 @@ using .Solvers
 using .Analysis
 
 export Interface
+export Solvers
+export Analysis
 
 function __init__()
     init_submodules()

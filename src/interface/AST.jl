@@ -1,7 +1,7 @@
 # ******************************************************************************************
 # Notices:
 #
-# Copyright © 2021 United States Government as represented by the Administrator of the
+# Copyright © 2022 United States Government as represented by the Administrator of the
 # National Aeronautics and Space Administration.  All Rights Reserved.
 #
 # Disclaimers
@@ -31,10 +31,8 @@
 """
 Sample environment, returning `EnvironmentValue` (default) or array.
 """
-function Base.rand(env::Environment; flat::Bool=false)
-	value = EnvironmentValue(k => rand(dist) for (k, dist) in env)
-	return flat ? flatten(env, value) : value
-end
+Base.rand(env::Environment) = EnvironmentValue(k => rand(dist) for (k, dist) in env)
+Base.rand(fenv::Flat) = flatten(fenv.env, rand(fenv.env))
 
 """
 Infer dimension of action space.

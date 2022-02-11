@@ -1,7 +1,7 @@
 # ******************************************************************************************
 # Notices:
 #
-# Copyright © 2021 United States Government as represented by the Administrator of the
+# Copyright © 2022 United States Government as represented by the Administrator of the
 # National Aeronautics and Space Administration.  All Rights Reserved.
 #
 # Disclaimers
@@ -48,7 +48,10 @@ export
 
     SoftActorCritic,
     MonteCarloSearch,
-    MonteCarloTreeSearch
+    MonteCarloTreeSearch,
+
+    RandomPolicy,
+    NullPolicy
 
 include("types.jl")
 include("utils.jl")
