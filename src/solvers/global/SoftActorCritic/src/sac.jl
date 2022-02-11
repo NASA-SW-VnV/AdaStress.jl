@@ -237,6 +237,7 @@ Base.@kwdef mutable struct SAC <: GlobalSolver
                                                     # name and function to apply to MDP
                                                     # after each trajectory)
     info::Dict{String, Any} = Dict{String, Any}()   # accumulated stats
+    progress::Bool = true                           # show progress bar
 
     # Checkpointing
     save::Bool = false                              # to enable checkpointing
@@ -267,7 +268,7 @@ function Solvers.solve(sac::SAC, env_fn::Function)
     # Initialize displayed information and progress meter
     @debug "Solve" total_steps
     disp_tups = initialize(sac.displays)
-    p = Progress(total_steps - sac.update_after)
+    p = Progress(total_steps - sac.update_after; enabled=sac.progress)
 
     ep_ret, ep_len = 0.0, 0
     reset!(env)
@@ -332,7 +333,7 @@ function Solvers.solve(sac::SAC, env_fn::Function)
         end
 
         # Progress meter
-        ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disp_tups))
+        sac.progress && ProgressMeter.next!(p; showvalues=gen_showvalues(epoch, disp_tups))
     end
 
     # Save display values
