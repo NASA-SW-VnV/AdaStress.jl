@@ -20,6 +20,14 @@ TOML = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
 
 [compat]
 julia = "1.7"
+BSON = "0.3.4"
+Bijections = "0.1.3"
+CommonRLInterface = "0.3.1"
+DataStructures = "0.18.11"
+Distributions = "0.25.48"
+ProgressMeter = "1.7.1"
+Scratch = "1.1.0"
+Suppressor = "0.2.0"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
