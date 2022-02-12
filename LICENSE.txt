@@ -14,7 +14,7 @@ AGREEMENT.
 Government Agency: NASA Ames Research Center
 Government Agency Original Software Designation: NASA Ames Research Center
 Government Agency Original Software Title: AdaStress
-User Registration Requested. Please e-mail Government Agency Point of Contact
+User Registration Requested. Please Visit http://opensource.arc.nasa.gov/
 Government Agency Point of Contact for Original Software: Adrian Agogino, Rory Lipkis
 
 1. DEFINITIONS
