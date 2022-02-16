@@ -9,13 +9,14 @@ AdaStress provides three primary services:
 
 ## Prerequisites
 
-AdaStress is written in the Julia programming language. If you do not have Julia on your computer, follow [the official instructions](https://julialang.org/downloads/platform) to download the latest version. For information on using Julia, see the [language documentation](https://docs.julialang.org). To download and build the latest version of AdaStress, open the Julia REPL, type `]` to enter the interactive package mode, and enter the command
+AdaStress is written in the Julia programming language. If you do not have Julia on your computer, follow [the official instructions](https://julialang.org/downloads/platform) to download the latest version. For information on using Julia, see the [language documentation](https://docs.julialang.org). To download and build the latest version of AdaStress, open the Julia REPL, and type
 ```
-add https://babelfish.arc.nasa.gov/bitbucket/scm/adastress/adastress.git
+using Pkg
+Pkg.add("AdaStress")
 ```
-To use the package, enter the command
+or type `]` to enter the interactive package mode and enter the command
 ```
-using AdaStress
+add AdaStress
 ```
 
 ## Problem setup
